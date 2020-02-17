@@ -63,6 +63,7 @@ npm install
 	},
 },
 ```
+
 **3. Set dictionary files with your MQTT->NOTI and NOTI->MQTT rules**:
 - go to `cd ~/MagicMirror/modules/MMM-MQTTbridge/dict`
 - edit `notiDictionary.js` and `mqttDictionary.js` for respective rules according to the explanation below.
@@ -70,18 +71,22 @@ npm install
 
 
 ## CONFIG STRUCTURE
-For better understanding, we have divided config into 3 sections:
+**For better understanding, we have divided config into 3 sections**:
 1. General configurations in `config.js`;
 2. "NOTIFICATION to MQTT" dictionary rules;
 3. "MQTT to NOTIFICATION" dictionary rules;
 
+
 ### GENERAL SECTION
+
 **MQTT part**
 - `mqttServer`set you server address using the following format:   "mqtt://"+USERNAME+":"+PASSWORD+"@"+IPADDRESS+":"+PORT. E.g. if you are using your broker *without username/password* on *localhost* with port *1883*, you config should looks "*mqtt://:@localhost:1883*",
 - `listenMqtt` - turn on/off the listening of MQTT messages. Set to `false` if you are going to use only NOTI->MQTT dictionary to save CPU usage;
 - `useMqttBridgeFromatOnly` - you can use native MQTTbridge MQTT message format. It saves CPU usage. Native MQTT message format looks: "NOTIFICATION_ID:NOTIFICATION_PAYLOAD". E.g. if you want to use Native format, send the MQTT message like "VOLUME_SET:20" and the module will convert it to NOTIFICATION "VOLUME:20" without Dictionary use (save CPU usage).
 - `interval` - interwal for MQTT status update, default is 300000ms.
 - `topicSubscr` - list of MQTT topics, to which the module will be subscribe and receive messages. :E.g.: ["home/smartmirror/bathroom/light/set", "home/smartmirror/kitchen/light/set"],
+
+
 **NOTIFICATION part**
 - `listenNoti` - turn on/off the listening of NOTIFICATIONS. Set to `false` if you are going to use only MQTT->NOTI dictionary to save CPU usage;
 - `useMqttBridgeFromatOnly` - - you can use native MQTTbridge NOTIFICATION format. It saves CPU usage. Native NOTIFICATION format looks: "NOTI_TO_MQTT: {mqttTopic: "", mqttPayload: ""}". E.g. if you want to use Native format, send the NOTIFICATIONS from other MM modules like "NOTI_TO_MQTT: {mqttTopic: "home/kitchen/light/set", mqttPayload: "{State:ON}" and the module will convert it to MQTT massage  to the topic "home/kitchen/light/set" with payload "{State:ON}" without Dictionary use (save CPU usage).
@@ -90,7 +95,8 @@ For better understanding, we have divided config into 3 sections:
 
 
 
-### MQTT to NOTIFICATIONS DICTIONARY SECTION
+### NOTIFICATIONS to MQTT DICTIONARY SECTION
+Should be set within `~/MagicMirror/modules/MMM-MQTTbridge/dict/notiDictionary.js`
 
 ```js
 var notiHook = [
@@ -127,7 +133,8 @@ var notiMqttCommands = [
 ```
 
 
-### MQTT to NOTIFICATIONS DICTIONARY SECTION - UNDER DEVELOPMENT
+### MQTT to NOTIFICATIONS DICTIONARY SECTION
+Should be set within `~/MagicMirror/modules/MMM-MQTTbridge/dict/mqttDictionary.js`
 
 ```js
 var mqttHook = [
@@ -168,5 +175,7 @@ var mqttNotiCommands = [
 
 
 ## CREDITS
+
 [@bugsounet](https://github.com/bugsounet)
-@sergge1
+
+[@sergge1](https://github.com/sergge1)
