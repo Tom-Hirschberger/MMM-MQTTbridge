@@ -26,7 +26,7 @@ Module.register("MMM-MQTTbridge", {
       interval: 300000,
       topicSubscr: [],
     },
-    // MQTT -> NOTI rules Dictionary - should be set in this structure within ./dict/notiDictionary.js
+    // MQTT -> NOTI rules Dictionary - should be set in this structure within ./dict/mqttDictionary.js
     mqttDictionary: {
 
     },
