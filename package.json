@@ -1,25 +1,25 @@
 {
-  "name": "mmm-mqtt",
-  "version": "0.1.0",
-  "description": "MQTT dispatcher module for MagicMirror",
+  "name": "MMM-MQTTbridge",
+  "version": "1.0.0",
+  "description": "NOTIFICATION <-> MQTT module for MagicMirror",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/BenGig/MMM-mqtt-dispatcher.git"
+    "url": "git+https://github.com/sergge1/MMM-MQTTbridge.git"
   },
   "keywords": [
     "MagicMirror",
-    "mqtt"
+    "MQTT"
   ],
-  "author": "Bengt Giger",
+  "author": "sergge1",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/BenGig/MMM-mqtt-dispatcher/issues"
+    "url": "https://github.com/sergge1/MMM-MQTTbridge/issues"
   },
-  "homepage": "https://github.com/BenGig/MMM-mqtt-dispatcher#readme",
+  "homepage": "https://github.com/sergge1/MMM-MQTTbridge#readme",
   "dependencies": {
     "mqtt": "^1.10.0"
   }
