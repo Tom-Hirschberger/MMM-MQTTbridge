@@ -14,98 +14,150 @@ So, this module for MagicMirror do the following:
 ## USAGE
 
 **MQTT to NOTIF**
-- user configure the `topicSubscr` - its a single or array of mqtt-topics which will be listened by the module;
-- user configure the rules `mqttDictionary` in mqttDictionary according to the config below;
-- module receives the mqtt-messages with the following payload `{NOTIFICATION_NAME:NOTIFICATION_PAYLOAD}`. NOTIFICATION_PAYLOAD could be a null, string, a number or a object (array). 
+- user configure within MM's the `mqttConfig` - its a general settings for mqtt ;
+- user sets rules to convert MQTT messages into MM's NOTIFICATIONS. Rules are set in `dic/mqttDictionary.js` according to the config below;
+- module subscirbes to preconfigured topics and receives the mqtt-messages;
 *Example: mqtt-message with payload `VOLUME_SET:20`*
-- module transforms mqtt-message into MM NOTIFICATIONS according to the `mqttDictionary` rules. *following Volume example above, module will issue Notification `VOLUME_SET` with notification payload `20`. So the volume of your MM will be changed to 20% (you need [MMM-Volume](https://github.com/eouia/MMM-Volume) to control volume via Notifications) 
+- module transforms mqtt-message into MM NOTIFICATIONS according to the `mqttDictionary` rules. *following Volume example above, module could issue Notification `VOLUME_SET` with notification payload `20`. So the volume of your MM will be changed to 20% (you need [MMM-Volume](https://github.com/eouia/MMM-Volume) to control volume via Notifications) 
 
 **NOTIF TO MQTT**
 
 - will be added later;
 
-## CONFIG STRUCTURE
 
-For better understanding, we have divided config into 3 sections:
-1. general configuration (like server address, reload interval etc) section;
-2. MQTT to NOTIFICATION dictionary section;
-3. MQTT to NOTIFICATION dictionary section;
-
-### GENERAL SECTION
+## INSTALLATION
+**1. Clone and install module. Do the following commands**:
+```sh
+cd ~/MagicMirror/modules
+git clone --depth=1 https://github.com/sergge1/MMM-MQTTbridge.git
+cd MMM-MQTTbridge
+npm install
+```
+**2. Copy to MagicMirror config.js file MQTTbridge's config section**:
+- go to `cd ~/MagicMirror/config`
+- open file `config.js`
+- add the following config within `modules` section:
 
 ```js
-debug: true,
-mqttServer: 'mqtt://:@localhost:1883', 
-    // serverMqtt: localhost , 
-    // portMqtt: 1883,
-    // userMqtt: "",
-    // passMqtt: "",
-    // listenMqtt: true,   // turn on/off listening of mqtt-messages and sending them as NOTIF
-    // listenNotif: true,   // turn on/off listening of NOTIF and sending them as mqt-messages
-topicSubscr: ['home/smartmirror/led/set', 'home/smartmirror/bathroom/light/set'], //default topics for receiving messages over mqtt. could be an array of topics
-    // topicSend: [home/smartmirror/mqtt_mm/set],  //default topic to send messages from NOTIF to mqtt which are not in notifDictionary; could be array of topics.
-    // mqttOnlyDict: false,  //if true - to send mqtt-messages only if they included in Dictionary. If false - to send matt-messages according to the rules in Dict AND for those mqtt-message which are not in the Dict rules - send their payload to defaultTopic;
-    // notifOnlyDict: false, //if true - to send notifications only if they are included in Dictionary. If false - to send NOTIF according to the rules in Dict AND for those NOTIF which are not in the Dict rules - send as NOTIF:PAYLOAD.
-interval: 300000,
-publications: [],
-
-// MQTT to NOTIFICATIONS DICTIONARY HERE
-
-// NOTIFICATIONS to MQTT DICTIONARY HERE
-
-// END OF CONFIG
+{
+	module: 'MMM-MQTTbridge',
+	disabled: false,
+	config: {
+		mqttServer: "mqtt://:@localhost:1883",
+		mqttConfig:
+		{
+			listenMqtt: true,
+			useMqttBridgeFromatOnly: false,
+			interval: 300000,
+			topicSubscr: ["home/smartmirror/bathroom/light/set", "home/smartmirror/kitchen/light/set"],
+		},
+		notiConfig:
+		{
+			listenNoti: true,
+			useMqttBridgeFromatOnly: false,
+			ignoreNotiId: ["CLOCK_MINUTE", "NEWS_FEED"],
+			ignoreNotiSender: ["system", "NEWS_FEED"],
+		},
+		// set "NOTIFICATIONS -> MQTT" dictionary at /dict/notiDictionary.js
+		// set "MQTT -> NOTIFICATIONS" dictionary at /dict/mqttDictionary.js
+	},
+},
 ```
+**3. Set dictionary files with your MQTT->NOTI and NOTI->MQTT rules**:
+- go to `cd ~/MagicMirror/modules/MMM-MQTTbridge/dict`
+- edit `notiDictionary.js` and `mqttDictionary.js` for respective rules according to the explanation below.
+
+
+
+## CONFIG STRUCTURE
+For better understanding, we have divided config into 3 sections:
+1. General configurations in `config.js`;
+2. "NOTIFICATION to MQTT" dictionary rules;
+3. "MQTT to NOTIFICATION" dictionary rules;
+
+### GENERAL SECTION
+**MQTT part**
+- `mqttServer`set you server address using the following format:   "mqtt://"+USERNAME+":"+PASSWORD+"@"+IPADDRESS+":"+PORT. E.g. if you are using your broker *without username/password* on *localhost* with port *1883*, you config should looks "*mqtt://:@localhost:1883*",
+- `listenMqtt` - turn on/off the listening of MQTT messages. Set to `false` if you are going to use only NOTI->MQTT dictionary to save CPU usage;
+- `useMqttBridgeFromatOnly` - you can use native MQTTbridge MQTT message format. It saves CPU usage. Native MQTT message format looks: "NOTIFICATION_ID:NOTIFICATION_PAYLOAD". E.g. if you want to use Native format, send the MQTT message like "VOLUME_SET:20" and the module will convert it to NOTIFICATION "VOLUME:20" without Dictionary use (save CPU usage).
+- `interval` - interwal for MQTT status update, default is 300000ms.
+- `topicSubscr` - list of MQTT topics, to which the module will be subscribe and receive messages. :E.g.: ["home/smartmirror/bathroom/light/set", "home/smartmirror/kitchen/light/set"],
+**NOTIFICATION part**
+- `listenNoti` - turn on/off the listening of NOTIFICATIONS. Set to `false` if you are going to use only MQTT->NOTI dictionary to save CPU usage;
+- `useMqttBridgeFromatOnly` - - you can use native MQTTbridge NOTIFICATION format. It saves CPU usage. Native NOTIFICATION format looks: "NOTI_TO_MQTT: {mqttTopic: "", mqttPayload: ""}". E.g. if you want to use Native format, send the NOTIFICATIONS from other MM modules like "NOTI_TO_MQTT: {mqttTopic: "home/kitchen/light/set", mqttPayload: "{State:ON}" and the module will convert it to MQTT massage  to the topic "home/kitchen/light/set" with payload "{State:ON}" without Dictionary use (save CPU usage).
+- `ignoreNotiId` - list your NOTIFICATION ID that should be ignored from processing, this saves CPU usage. E.g. ["CLOCK_MINUTE", "NEWS_FEED"],
+- `ignoreNotiSender` - list your NOTIFICATION SENDERS that should be ignored from processing, this saves CPU usage. E.g. ["system", "NEWS_FEED"]
+
+
 
 ### MQTT to NOTIFICATIONS DICTIONARY SECTION
 
 ```js
-mqttDictionary: [  // you can defined different NOTIFICATIONS here based on the mqttNOTIFICATION and mqttPYALOAD
+var notiHook = [
+  {
+    notiId: "CLOCK_SECOND",
+    notiPayload: [
       {
-        mqttNotif: "ASSISTANT_LISTEN", //if MQTT message starts with "CLOCK_MINUTE", the module will do further
-        mqttPayload: [
-          {
-            payloadValue: "0", // if the MQTT message's second part '{...:20}' the module will send the notifications according to the rules in the array `notifications` below.
-            sendNotif: true, //if this is false, NOTIFICATIONS will not be send if the occurence `mqttNotif` and `payloadValue` will be found;
-            notifications: [ // array of notifications
-              {
-                notif: 'ASSISTANT_LISTEN',     // NOTIF #1
-//                notifDelay: 0, //if you want some timeout between mqtt_received and sending NOTIF. UNDER DEVELOPMENT
-                notifPayload: '0' // payload of your NOTIFICATION
-              },
-              {
-                notif: 'NEWS_FEED',     // NOTIF #2
-                notifDelay: 0,
-                notifPayload: 'www.kukuyopta.com'
-              },
-            ],
-          },
+        payloadValue: '10',
+        notiMqttCmd: ["Command 1", "Command 2"]
       },
-],
+      {
+        payloadValue: '20',
+        notiMqttCmd: ["Command 2"]
+      },
+      {
+        payloadValue: '30', 
+        notiMqttCmd: ["Command 1", "Command 2"]
+      },
+    ],
+  },
+];
+var notiMqttCommands = [
+  {
+    commandId: "Command 1",
+    mqttTopic: "myhome/kitchen/light/set",
+    mqttMsgPayload: '{"state":"OFF"}'
+  },
+  {
+    commandId: "Command 2",
+    mqttTopic: "myhome/kitchen/light/set",
+    mqttMsgPayload: '{"state":"ON"}'
+  },
+];
 ```
+
 
 ### MQTT to NOTIFICATIONS DICTIONARY SECTION - UNDER DEVELOPMENT
 
 ```js
-notifDictionary: [ // you can defined different MQTT messages here based on the NOTIFICATION and PAYLOAD
-      {
-        notification: "CLOCK_MINUTE",
-        payload: "20", // so if MM issues notification "CLOCK_MINUTE" with payload "20", the mqtt-messages should be sent to the topics - could be a list of such messages like in example further: 2 topics/messages)
-        sendMessage: true, //possible values "true" - so execute mqtt-send, "false" - do nothing (parameter needed to make exception for some specific notig;
-        mqttMessages: [
-          {
-            mqttTopic: 'home/smartmirror/led/set',
-            messageDelay: 0, //if you want some timeout between NOTIF received and sending mqtt-messages 
-            messagePayload: '{STATE:ON, COLOR: {"r":255,"g":255,"b":$payload$}}' // $payload$ means that mqtt-message payload should include actual payload from notification, so the color "b" shold be sent as "20"
-          },
-          {
-            mqttTopic: 'home/smartmirror/audio/set',
-            messageDelay: 0,
-            messagePayload: '{CMD:TURN_ON}'
-          },
-        ]
-      },
-],
-```
+var mqttHook = [
+    {
+      mqttPayload: "ASSISTANT_LISTEN",
+      mqttNotiCmd: ["Command 1"]
+    },
+    {
+      mqttPayload: "ASSISTANT_SPEAK",
+      mqttNotiCmd: ["Command 2"]
+    },
+    {
+      mqttPayload: "ASSISTANT_NOTHING",
+      mqttNotiCmd: ["Command 1", "Command 2"]
+    },
+  ];
+var mqttNotiCommands = [
+    {
+      commandId: "Command 1",
+      notiID: "ASSISTANT_LISTEN",
+      notiPayload: 'BLABLABLA-1'
+    },
+    {
+      commandId: "Command 2",
+      notiID: "ASSISTANT_LISTEN",
+      notiPayload: 'BLABLABLA-2'
+    },
+  ];
+  ```
+  
 
 ## TESTED ENVIRONMENT
 - Raspberry Pi 3 B+;
@@ -113,3 +165,8 @@ notifDictionary: [ // you can defined different MQTT messages here based on the 
 - [MagicMirror](https://github.com/MichMich/MagicMirror) ^2.10.1;
 - mqtt-broker [eclipse-mosquitto](https://hub.docker.com/_/eclipse-mosquitto) run in docker on the same RPi;
 - mqtt-client on Windows10.
+
+
+## CREDITS
+[@bugsounet](https://github.com/bugsounet)
+@sergge1
