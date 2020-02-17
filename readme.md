@@ -9,7 +9,7 @@ So, this module for MagicMirror do the following:
 1. **Listens to MQTT messages** from your MQTT broker and, if mqtt-message arrives, module **sends MM Notifications** based on the pre-configured mqtt-to-notification Dictionary rules.
 2. **Listens to the MM Notifications** within your MagicMirror environment. If Notification arrives, module **sends MQTT message** based on the preconfigured notification-to-mqtt Dictionary rules. 
 
-![addons Logo](.github/mqttbridge_logo1.png)
+![MQTTbridge_logo](.github/mqttbridge_logo.png)
 
 ## USAGE
 
