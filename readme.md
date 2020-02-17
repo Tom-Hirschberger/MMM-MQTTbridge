@@ -11,20 +11,6 @@ So, this module for MagicMirror do the following:
 
 ![MQTTbridge_logo](.github/mqttbridge_logo.png)
 
-## USAGE
-
-**MQTT to NOTIF**
-- user configure within MM's the `mqttConfig` - its a general settings for mqtt ;
-- user sets rules to convert MQTT messages into MM's NOTIFICATIONS. Rules are set in `dic/mqttDictionary.js` according to the config below;
-- module subscirbes to preconfigured topics and receives the mqtt-messages;
-*Example: mqtt-message with payload `VOLUME_SET:20`*
-- module transforms mqtt-message into MM NOTIFICATIONS according to the `mqttDictionary` rules. *following Volume example above, module could issue Notification `VOLUME_SET` with notification payload `20`. So the volume of your MM will be changed to 20% (you need [MMM-Volume](https://github.com/eouia/MMM-Volume) to control volume via Notifications) 
-
-**NOTIF TO MQTT**
-
-- will be added later;
-
-
 ## INSTALLATION
 **1. Clone and install module. Do the following commands**:
 ```sh
