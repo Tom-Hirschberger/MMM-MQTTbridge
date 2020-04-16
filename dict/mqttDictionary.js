@@ -6,16 +6,14 @@
 
 var mqttHook = [
     {
+      mqttTopic: "dahoam/test",
       mqttPayload: "ASSISTANT_LISTEN",
       mqttNotiCmd: ["Command 1"]
     },
     {
-      mqttPayload: "ASSISTANT_SPEAK",
+      mqttTopic: "dahoam/test2",
+      mqttPayload: "",
       mqttNotiCmd: ["Command 2"]
-    },
-    {
-      mqttPayload: "ASSISTANT_NOTHING",
-      mqttNotiCmd: ["Command 1", "Command 2"]
     },
   ];
 var mqttNotiCommands = [
@@ -27,7 +25,7 @@ var mqttNotiCommands = [
     {
       commandId: "Command 2",
       notiID: "ASSISTANT_LISTEN",
-      notiPayload: 'BLABLABLA-2'
+      notiPayload: ''
     },
   ];
 

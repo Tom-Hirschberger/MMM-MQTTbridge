@@ -10,16 +10,17 @@ var notiHook = [
     notiId: "CLOCK_SECOND",
     notiPayload: [
       {
-        payloadValue: '10', // so if MM issues notification "CLOCK_MINUTE" with payload "20", the mqtt-messages should be sent to the topics - could be a list of such messages like in example further: 2 topics/messages)
-        notiMqttCmd: ["Command 1", "Command 2"]
+        payloadValue: '10', 
+        notiMqttCmd: ["Command 1"]
       },
+    ],
+  },
+  {
+    notiId: "INDOOR_TEMPERATURE",
+    notiPayload: [
       {
-        payloadValue: '20', // so if MM issues notification "CLOCK_MINUTE" with payload "20", the mqtt-messages should be sent to the topics - could be a list of such messages like in example further: 2 topics/messages)
+        payloadValue: '', 
         notiMqttCmd: ["Command 2"]
-      },
-      {
-        payloadValue: '30', // so if MM issues notification "CLOCK_MINUTE" with payload "20", the mqtt-messages should be sent to the topics - could be a list of such messages like in example further: 2 topics/messages)
-        notiMqttCmd: ["Command 1", "Command 2"]
       },
     ],
   },
@@ -33,7 +34,7 @@ var notiMqttCommands = [
   {
     commandId: "Command 2",
     mqttTopic: "myhome/kitchen/light/set",
-    mqttMsgPayload: '{"state":"ON"}'
+    mqttMsgPayload: ''
   },
 ];
 
