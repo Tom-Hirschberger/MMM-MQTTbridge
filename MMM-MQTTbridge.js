@@ -69,6 +69,8 @@ Module.register("MMM-MQTTbridge", {
 
   mqttToNoti: function (payload) {
     // search payload of MQTT messages within MQTT DICTIONARY
+    console.log(payload.data);
+    console.log(payload.topic);
     for (var i = 0; i < this.config.mqttDictionary.mqttHook.length; i++) 
     {
       // check for topic
@@ -105,7 +107,7 @@ Module.register("MMM-MQTTbridge", {
     }   
   },
 
-  notiToMqtt: function(payload) {
+  notiToMqtt: function(notification, payload) {
     // search NOTIFICATIONS and PAYLOADS within DICTIONARY. start with NOTI ID
     for (var i = 0; i < this.config.notiDictionary.notiHook.length; i++) 
     {
@@ -188,7 +190,7 @@ Module.register("MMM-MQTTbridge", {
     }
 
 
-    this.notiToMqtt(payload);
+    this.notiToMqtt(notification, payload);
   }
   // END of NOTIFICATIONS to MQTT logic
 });

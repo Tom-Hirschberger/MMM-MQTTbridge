@@ -46,8 +46,8 @@ module.exports = NodeHelper.create({
       // subscription to MQTT topics from config
       for (var i = 0; i < mqttHook.length; i++) {
         if (!client.connected) {
-          client.subscribe(mqttHook.mqttTopic[i]);
-          console.log("[MQTT bridge] Subscribed to the topic: " + mqttHook.mqttTopic[i]);
+          client.subscribe(mqttHook[i].mqttTopic);
+          console.log("[MQTT bridge] Subscribed to the topic: " + mqttHook[i].mqttTopic);
         
           client.on('message', function (topic, message) {  //MQTT library function. Returns message topic/payload when it arrives to subscribed topics.
             console.log('[MQTT bridge] MQTT message received. Topic: ' + topic + ', message: ' + message.toString());
