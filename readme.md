@@ -78,8 +78,10 @@ npm install
 ### NOTIFICATIONS to MQTT DICTIONARY SECTION
 Should be set within `~/MagicMirror/modules/MMM-MQTTbridge/dict/notiDictionary.js`
 
-```js
+If payloadValue is empty, the actual payload of the notification will be used as MQTT payload.
+If payloadValue is specified and matches the payload received via the notification, mqttMsgPayload will be used as MQTT payload. 
 
+```js
 var notiHook = [
   {
     notiId: "CLOCK_SECOND",
@@ -117,6 +119,9 @@ var notiMqttCommands = [
 
 ### MQTT to NOTIFICATIONS DICTIONARY SECTION
 Should be set within `~/MagicMirror/modules/MMM-MQTTbridge/dict/mqttDictionary.js`
+
+If payloadValue is empty, the actual payload of the MQTT message will be used as notification payload.
+If payloadValue is specified and matches the payload received via MQTT, notiPayload will be used as notification payload. 
 
 ```js
 var mqttHook = [
