@@ -76,33 +76,37 @@ Module.register("MMM-MQTTbridge", {
       // check for topic
       if (payload.topic == this.config.mqttDictionary.mqttHook[i].mqttTopic)
       {
-        // When payload is specified or empty --> continue
-        if (this.config.mqttDictionary.mqttHook[i].mqttPayload == payload.data || this.config.mqttDictionary.mqttHook[i].mqttPayload == '') 
+        for (var k = 0; k < this.config.mqttDictionary.mqttHook[i].mqttPayload.length; k++) 
         {
-          // if payload found -> search COMMAND within COMMAND list
-          for (var j = 0; j < this.config.mqttDictionary.mqttHook[i].mqttNotiCmd.length; j++) 
+          // When payload is specified or empty --> continue
+          if (this.config.mqttDictionary.mqttHook[i].mqttPayload[k].payloadValue == payload.data || this.config.mqttDictionary.mqttHook[i].mqttPayload[k].payloadValue == '') 
           {
-            for (var x in this.config.mqttDictionary.mqttNotiCommands) 
-            { //dictionary rool can reference each MQTT message for several Commands, so lets send NOTI for each Command now
-              if (this.config.mqttDictionary.mqttHook[i].mqttNotiCmd[j] == this.config.mqttDictionary.mqttNotiCommands[x].commandId) 
-              {
-                // send NOTI based on the command specification and also send socketNoti to display the log in terminal
-                if (this.config.mqttDictionary.mqttHook[i].mqttPayload == '') 
+            // if payload found -> search COMMAND within COMMAND list
+            for (var j = 0; j < this.config.mqttDictionary.mqttHook[i].mqttPayload[k].mqttNotiCmd.length; j++) 
+            {
+              for (var x in this.config.mqttDictionary.mqttNotiCommands) 
+              { //dictionary rool can reference each MQTT message for several Commands, so lets send NOTI for each Command now
+                if (this.config.mqttDictionary.mqttHook[i].mqttPayload[k].mqttNotiCmd[j] == this.config.mqttDictionary.mqttNotiCommands[x].commandId) 
                 {
-                  this.sendNotification(this.config.mqttDictionary.mqttNotiCommands[x].notiID, payload.data);
-                  this.sendSocketNotification("LOG","[MQTT bridge] MQTT -> NOTI issued: " + this.config.mqttDictionary.mqttNotiCommands[x].notiID + ", payload: "+ payload.data);
-                } 
-                else 
-                {
-                  this.sendNotification(this.config.mqttDictionary.mqttNotiCommands[x].notiID, this.config.mqttDictionary.mqttNotiCommands[x].notiPayload);
-                  this.sendSocketNotification("LOG","[MQTT bridge] MQTT -> NOTI issued: " + this.config.mqttDictionary.mqttNotiCommands[x].notiID + ", payload: "+ this.config.mqttDictionary.mqttNotiCommands[x].notiPayload);
-                }  
-                break;
+                  // send NOTI based on the command specification and also send socketNoti to display the log in terminal
+                  if (this.config.mqttDictionary.mqttHook[i].mqttPayload[k].mqttPayload == '') 
+                  {
+                    this.sendNotification(this.config.mqttDictionary.mqttNotiCommands[x].notiID, payload.data);
+                    this.sendSocketNotification("LOG","[MQTT bridge] MQTT -> NOTI issued: " + this.config.mqttDictionary.mqttNotiCommands[x].notiID + ", payload: "+ payload.data);
+                  } 
+                  else 
+                  {
+                    this.sendNotification(this.config.mqttDictionary.mqttNotiCommands[x].notiID, this.config.mqttDictionary.mqttNotiCommands[x].notiPayload);
+                    this.sendSocketNotification("LOG","[MQTT bridge] MQTT -> NOTI issued: " + this.config.mqttDictionary.mqttNotiCommands[x].notiID + ", payload: "+ this.config.mqttDictionary.mqttNotiCommands[x].notiPayload);
+                  }  
+                  break;
+                }
               }
             }
+            break;
           }
-          break;
         }
+        break;
       }
     }   
   },

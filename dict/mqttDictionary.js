@@ -7,13 +7,25 @@
 var mqttHook = [
     {
       mqttTopic: "dahoam/test",
-      mqttPayload: "ASSISTANT_LISTEN",
-      mqttNotiCmd: ["Command 1"]
+      mqttPayload: [
+        {
+          payloadValue: "ASSISTANT_LISTEN",
+          mqttNotiCmd: ["Command 1"]
+        },
+        {
+          payloadValue: "",
+          mqttNotiCmd: ["Command 2"]
+        },
+      ],
     },
     {
       mqttTopic: "dahoam/test2",
-      mqttPayload: "",
-      mqttNotiCmd: ["Command 2"]
+      mqttPayload: [
+        {
+          payloadValue: "",
+          mqttNotiCmd: ["Command 2"]
+        },
+      ],
     },
   ];
 var mqttNotiCommands = [
