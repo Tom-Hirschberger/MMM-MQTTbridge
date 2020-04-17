@@ -4,7 +4,8 @@
 /* Magic Mirror
  * Module: MMM-MQTTbridge
  *
- * By @sergge1
+ * Forked from @sergge1
+ * Modified by DanielHfnr
   * MIT Licensed.
  */
 

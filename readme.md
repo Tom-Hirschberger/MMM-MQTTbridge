@@ -15,7 +15,7 @@ So, this module for MagicMirror do the following:
 **1. Clone and install module. Do the following commands**:
 ```sh
 cd ~/MagicMirror/modules
-git clone --depth=1 https://github.com/sergge1/MMM-MQTTbridge.git
+git clone --depth=1 https://github.com/DanielHfnr/MMM-MQTTbridge.git
 cd MMM-MQTTbridge
 npm install
 ```
@@ -33,14 +33,11 @@ npm install
 		mqttConfig:
 		{
 			listenMqtt: true,
-			useMqttBridgeFromatOnly: false,
 			interval: 300000,
-			topicSubscr: ["home/smartmirror/bathroom/light/set", "home/smartmirror/kitchen/light/set"],
 		},
 		notiConfig:
 		{
 			listenNoti: true,
-			useMqttBridgeFromatOnly: false,
 			ignoreNotiId: ["CLOCK_MINUTE", "NEWS_FEED"],
 			ignoreNotiSender: ["system", "NEWS_FEED"],
 		},
@@ -68,14 +65,11 @@ npm install
 **MQTT part**
 - `mqttServer`set you server address using the following format:   "mqtt://"+USERNAME+":"+PASSWORD+"@"+IPADDRESS+":"+PORT. E.g. if you are using your broker *without username/password* on *localhost* with port *1883*, you config should looks "*mqtt://:@localhost:1883*",
 - `listenMqtt` - turn on/off the listening of MQTT messages. Set to `false` if you are going to use only NOTI->MQTT dictionary to save CPU usage;
-- `useMqttBridgeFromatOnly` - you can use native MQTTbridge MQTT message format. It saves CPU usage. Native MQTT message format looks: "NOTIFICATION_ID:NOTIFICATION_PAYLOAD". E.g. if you want to use Native format, send the MQTT message like "VOLUME_SET:20" and the module will convert it to NOTIFICATION "VOLUME:20" without Dictionary use (save CPU usage).
 - `interval` - interwal for MQTT status update, default is 300000ms.
-- `topicSubscr` - list of MQTT topics, to which the module will be subscribe and receive messages. :E.g.: ["home/smartmirror/bathroom/light/set", "home/smartmirror/kitchen/light/set"],
 
 
 **NOTIFICATION part**
 - `listenNoti` - turn on/off the listening of NOTIFICATIONS. Set to `false` if you are going to use only MQTT->NOTI dictionary to save CPU usage;
-- `useMqttBridgeFromatOnly` - - you can use native MQTTbridge NOTIFICATION format. It saves CPU usage. Native NOTIFICATION format looks: "NOTI_TO_MQTT: {mqttTopic: "", mqttPayload: ""}". E.g. if you want to use Native format, send the NOTIFICATIONS from other MM modules like "NOTI_TO_MQTT: {mqttTopic: "home/kitchen/light/set", mqttPayload: "{State:ON}" and the module will convert it to MQTT massage  to the topic "home/kitchen/light/set" with payload "{State:ON}" without Dictionary use (save CPU usage).
 - `ignoreNotiId` - list your NOTIFICATION ID that should be ignored from processing, this saves CPU usage. E.g. ["CLOCK_MINUTE", "NEWS_FEED"],
 - `ignoreNotiSender` - list your NOTIFICATION SENDERS that should be ignored from processing, this saves CPU usage. E.g. ["system", "NEWS_FEED"]
 
@@ -85,21 +79,23 @@ npm install
 Should be set within `~/MagicMirror/modules/MMM-MQTTbridge/dict/notiDictionary.js`
 
 ```js
+
 var notiHook = [
   {
     notiId: "CLOCK_SECOND",
     notiPayload: [
       {
-        payloadValue: '10',
-        notiMqttCmd: ["Command 1", "Command 2"]
+        payloadValue: '10', 
+        notiMqttCmd: ["Command 1"]
       },
+    ],
+  },
+  {
+    notiId: "INDOOR_TEMPERATURE",
+    notiPayload: [
       {
-        payloadValue: '20',
+        payloadValue: '', 
         notiMqttCmd: ["Command 2"]
-      },
-      {
-        payloadValue: '30', 
-        notiMqttCmd: ["Command 1", "Command 2"]
       },
     ],
   },
@@ -112,8 +108,8 @@ var notiMqttCommands = [
   },
   {
     commandId: "Command 2",
-    mqttTopic: "myhome/kitchen/light/set",
-    mqttMsgPayload: '{"state":"ON"}'
+    mqttTopic: "myhome/kitchen/temperature",
+    mqttMsgPayload: ''
   },
 ];
 ```
@@ -125,16 +121,26 @@ Should be set within `~/MagicMirror/modules/MMM-MQTTbridge/dict/mqttDictionary.j
 ```js
 var mqttHook = [
     {
-      mqttPayload: "ASSISTANT_LISTEN",
-      mqttNotiCmd: ["Command 1"]
+      mqttTopic: "myhome/test",
+      mqttPayload: [
+        {
+          payloadValue: "ASSISTANT_LISTEN",
+          mqttNotiCmd: ["Command 1"]
+        },
+        {
+          payloadValue: "",
+          mqttNotiCmd: ["Command 2"]
+        },
+      ],
     },
     {
-      mqttPayload: "ASSISTANT_SPEAK",
-      mqttNotiCmd: ["Command 2"]
-    },
-    {
-      mqttPayload: "ASSISTANT_NOTHING",
-      mqttNotiCmd: ["Command 1", "Command 2"]
+      mqttTopic: "myhome/test2",
+      mqttPayload: [
+        {
+          payloadValue: "",
+          mqttNotiCmd: ["Command 2"]
+        },
+      ],
     },
   ];
 var mqttNotiCommands = [
@@ -146,19 +152,11 @@ var mqttNotiCommands = [
     {
       commandId: "Command 2",
       notiID: "ASSISTANT_LISTEN",
-      notiPayload: 'BLABLABLA-2'
+      notiPayload: ''
     },
   ];
   ```
   
-
-## TESTED ENVIRONMENT
-- Raspberry Pi 3 B+;
-- Clean Updated Upgarded [Raspbian Buster](https://www.raspberrypi.org/downloads/raspbian/);
-- [MagicMirror](https://github.com/MichMich/MagicMirror) ^2.10.1;
-- mqtt-broker [eclipse-mosquitto](https://hub.docker.com/_/eclipse-mosquitto) run in docker on the same RPi;
-- mqtt-client on Windows10.
-
 
 ## CREDITS
 

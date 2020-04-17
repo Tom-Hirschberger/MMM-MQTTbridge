@@ -5,7 +5,8 @@
 /* Magic Mirror
  * Module: MMM-MQTTbridge
  *
- * By sergge1
+ * Forked from @sergge1
+ * Modified by DanielHfnr
  * MIT Licensed.
  */
 
@@ -68,27 +69,26 @@ Module.register("MMM-MQTTbridge", {
   },
 
   mqttToNoti: function (payload) {
-    // search payload of MQTT messages within MQTT DICTIONARY
-    console.log(payload.data);
-    console.log(payload.topic);
+    // go through MQTT DICTIONARY
     for (var i = 0; i < this.config.mqttDictionary.mqttHook.length; i++) 
     {
-      // check for topic
+      // search topic specified in mqttDictionary
       if (payload.topic == this.config.mqttDictionary.mqttHook[i].mqttTopic)
       {
         for (var k = 0; k < this.config.mqttDictionary.mqttHook[i].mqttPayload.length; k++) 
         {
-          // When payload is specified or empty --> continue
+          // When payloadValue is specified in mqttDictionary and matches the actual payload --> continue
+          // If payloadValue in mqttDictionary is empty --> continue
           if (this.config.mqttDictionary.mqttHook[i].mqttPayload[k].payloadValue == payload.data || this.config.mqttDictionary.mqttHook[i].mqttPayload[k].payloadValue == '') 
           {
-            // if payload found -> search COMMAND within COMMAND list
+            // search COMMAND within COMMAND list
             for (var j = 0; j < this.config.mqttDictionary.mqttHook[i].mqttPayload[k].mqttNotiCmd.length; j++) 
             {
               for (var x in this.config.mqttDictionary.mqttNotiCommands) 
-              { //dictionary rool can reference each MQTT message for several Commands, so lets send NOTI for each Command now
+              { 
                 if (this.config.mqttDictionary.mqttHook[i].mqttPayload[k].mqttNotiCmd[j] == this.config.mqttDictionary.mqttNotiCommands[x].commandId) 
                 {
-                  // send NOTI based on the command specification and also send socketNoti to display the log in terminal
+                  // Decision: Send payload specified in the mqttDictionary oder send the actual payload of mqtt message
                   if (this.config.mqttDictionary.mqttHook[i].mqttPayload[k].mqttPayload == '') 
                   {
                     this.sendNotification(this.config.mqttDictionary.mqttNotiCommands[x].notiID, payload.data);
@@ -117,7 +117,6 @@ Module.register("MMM-MQTTbridge", {
     {
       if (this.config.notiDictionary.notiHook[i].notiId === notification) 
       {
-        // continue searching - Payload
         // if Payload is empty in config file --> send noti payload to mqtt
         for (var j = 0; j < this.config.notiDictionary.notiHook[i].notiPayload.length; j++) 
         {
@@ -131,8 +130,7 @@ Module.register("MMM-MQTTbridge", {
                 if (this.config.notiDictionary.notiHook[i].notiPayload[j].notiMqttCmd[k] == this.config.notiDictionary.notiMqttCommands[x].commandId) 
                 {
                   // if NOTI matched in the Dictionary, send respective MQTT message
-                  // If payloadValue is empty in notiDictionary --> send payload of Notification to MQTT
-                  // Otherwise send payload defined in notiDictionary
+                  // If payloadValue is empty in notiDictionary --> send payload of Notification to MQTT - Otherwise send payload defined in notiDictionary
                   if (this.config.notiDictionary.notiHook[i].notiPayload[j].payloadValue == '') 
                   {
                     this.publishNotiToMqtt(this.config.notiDictionary.notiMqttCommands[x].mqttTopic, payload);

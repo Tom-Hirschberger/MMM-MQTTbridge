@@ -1,8 +1,3 @@
-/**  mqtt-to-notification                     **/
-/**  dictionaty                               **/
-/**  for MMM-MQTTbridge module                **/
-/**  modify comands                           **/
-/**         @sergge1                          **/
 
 var mqttHook = [
     {
