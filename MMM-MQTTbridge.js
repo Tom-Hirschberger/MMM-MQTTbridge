@@ -133,11 +133,11 @@ Module.register("MMM-MQTTbridge", {
                   // If payloadValue is empty in notiDictionary --> send payload of Notification to MQTT - Otherwise send payload defined in notiDictionary
                   if (this.config.notiDictionary.notiHook[i].notiPayload[j].payloadValue == '') 
                   {
-                    this.publishNotiToMqtt(this.config.notiDictionary.notiMqttCommands[x].mqttTopic, payload);
+                    this.publishNotiToMqtt(this.config.notiDictionary.notiMqttCommands[x].mqttTopic, payload.toString());
                   } 
                   else 
                   {
-                    this.publishNotiToMqtt(this.config.notiDictionary.notiMqttCommands[x].mqttTopic, this.config.notiDictionary.notiMqttCommands[x].mqttMsgPayload);
+                    this.publishNotiToMqtt(this.config.notiDictionary.notiMqttCommands[x].mqttTopic, this.config.notiDictionary.notiMqttCommands[x].mqttMsgPayload.toString());
                   }
                   break;
                 }
