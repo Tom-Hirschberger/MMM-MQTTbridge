@@ -15,7 +15,7 @@ So, this module for MagicMirror do the following:
 **1. Clone and install module. Do the following commands**:
 ```sh
 cd ~/MagicMirror/modules
-git clone --depth=1 https://github.com/DanielHfnr/MMM-MQTTbridge.git
+git clone --depth=1 https://github.com/sergge1/MMM-MQTTbridge.git
 cd MMM-MQTTbridge
 npm install
 ```
