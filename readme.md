@@ -168,3 +168,5 @@ var mqttNotiCommands = [
 [@bugsounet](https://github.com/bugsounet)
 
 [@sergge1](https://github.com/sergge1)
+
+[@DanielHfnr](https://github.com/DanielHfnr)
