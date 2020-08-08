@@ -1,21 +1,26 @@
-/**  mqtt-to-notification                     **/
-/**  dictionaty                               **/
-/**  for MMM-MQTTbridge module                **/
-/**  modify comands                           **/
-/**         @sergge1                          **/
 
 var mqttHook = [
     {
-      mqttPayload: "ASSISTANT_LISTEN",
-      mqttNotiCmd: ["Command 1"]
+      mqttTopic: "dahoam/test",
+      mqttPayload: [
+        {
+          payloadValue: "ASSISTANT_LISTEN",
+          mqttNotiCmd: ["Command 1"]
+        },
+        {
+          payloadValue: "",
+          mqttNotiCmd: ["Command 2"]
+        },
+      ],
     },
     {
-      mqttPayload: "ASSISTANT_SPEAK",
-      mqttNotiCmd: ["Command 2"]
-    },
-    {
-      mqttPayload: "ASSISTANT_NOTHING",
-      mqttNotiCmd: ["Command 1", "Command 2"]
+      mqttTopic: "dahoam/test2",
+      mqttPayload: [
+        {
+          payloadValue: "",
+          mqttNotiCmd: ["Command 2"]
+        },
+      ],
     },
   ];
 var mqttNotiCommands = [
@@ -27,7 +32,7 @@ var mqttNotiCommands = [
     {
       commandId: "Command 2",
       notiID: "ASSISTANT_LISTEN",
-      notiPayload: 'BLABLABLA-2'
+      notiPayload: ''
     },
   ];
 
