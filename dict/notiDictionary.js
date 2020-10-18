@@ -1,11 +1,15 @@
 
 var notiHook = [
   {
-    notiId: "CLOCK_SECOND",
+    notiId: "USER_PRESENCE",
     notiPayload: [
       {
-        payloadValue: '10', 
-        notiMqttCmd: ["Command 1"]
+        payloadValue: true, 
+        notiMqttCmd: ["SCREENON"]
+      },
+      {
+        payloadValue: false, 
+        notiMqttCmd: ["SCREENOFF"]
       },
     ],
   },
@@ -20,14 +24,24 @@ var notiHook = [
   },
 ];
 var notiMqttCommands = [
+    {
+    commandId: "SCREENON",
+    mqttTopic: "magicmirror/state",
+    mqttMsgPayload: '{"state":"ON"}'
+    },
+    {
+    commandId: "SCREENOFF",
+    mqttTopic: "magicmirror/state",
+    mqttMsgPayload: '{"state":"OFF"}'
+  },
   {
     commandId: "Command 1",
-    mqttTopic: "myhome/kitchen/light/set",
+    mqttTopic: "magicmirror/state",
     mqttMsgPayload: '{"state":"OFF"}'
   },
   {
     commandId: "Command 2",
-    mqttTopic: "myhome/kitchen/light/set",
+    mqttTopic: "magicmirror/state",
     mqttMsgPayload: ''
   },
 ];
