@@ -80,7 +80,8 @@ Should be set within `~/MagicMirror/modules/MMM-MQTTbridge/dict/notiDictionary.j
 
 If payloadValue is empty, the actual payload of the notification will be used as MQTT payload.
 If payloadValue is specified and matches the payload received via the notification, mqttMsgPayload will be used as MQTT payload. 
-Please note, if your Noti issues boolean values (e.g. true/false) - you need to paste into notiDict 1 or 0 for true/false.
+
+**Please note, if your Noti issues boolean values (e.g. true/false) - you need to paste into notiDict 1 or 0 for true/false**.
 
 ```js
 var notiHook = [
