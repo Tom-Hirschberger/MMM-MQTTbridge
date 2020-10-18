@@ -1,24 +1,23 @@
-
 var mqttHook = [
     {
-      mqttTopic: "dahoam/test",
+      mqttTopic: "myhome/smartmirror/led/set",
       mqttPayload: [
         {
-          payloadValue: "ASSISTANT_LISTEN",
+          payloadValue: '{"state": "ON"}',
           mqttNotiCmd: ["Command 1"]
         },
         {
-          payloadValue: "",
+          payloadValue: '{"state": "OFF"}',
           mqttNotiCmd: ["Command 2"]
         },
       ],
     },
     {
-      mqttTopic: "dahoam/test2",
+      mqttTopic: "magicmirror/state",
       mqttPayload: [
         {
-          payloadValue: "",
-          mqttNotiCmd: ["Command 2"]
+          payloadValue: "1",
+          mqttNotiCmd: ["Command 1", "Command 2"]
         },
       ],
     },
@@ -26,13 +25,13 @@ var mqttHook = [
 var mqttNotiCommands = [
     {
       commandId: "Command 1",
-      notiID: "ASSISTANT_LISTEN",
-      notiPayload: 'BLABLABLA-1'
+      notiID: "REMOTE_ACTION",
+      notiPayload: {action: 'MONITORON'}
     },
     {
       commandId: "Command 2",
-      notiID: "ASSISTANT_LISTEN",
-      notiPayload: ''
+      notiID: "REMOTE_ACTION",
+      notiPayload: {action: 'MONITOROFF'}
     },
   ];
 
