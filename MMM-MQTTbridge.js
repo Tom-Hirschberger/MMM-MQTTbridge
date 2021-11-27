@@ -89,7 +89,7 @@ Module.register("MMM-MQTTbridge", {
                 if (this.config.mqttDictionary.mqttHook[i].mqttPayload[k].mqttNotiCmd[j] == this.config.mqttDictionary.mqttNotiCommands[x].commandId) 
                 {
                   // Decision: Send payload specified in the mqttDictionary oder send the actual payload of mqtt message
-                  if (this.config.mqttDictionary.mqttHook[i].mqttPayload[k].mqttPayload == '') 
+                  if (this.config.mqttDictionary.mqttHook[i].mqttPayload[k].payloadValue == '') 
                   {
                     this.sendNotification(this.config.mqttDictionary.mqttNotiCommands[x].notiID, payload.data);
                     this.sendSocketNotification("LOG","[MQTT bridge] MQTT -> NOTI issued: " + this.config.mqttDictionary.mqttNotiCommands[x].notiID + ", payload: "+ payload.data);
