@@ -146,7 +146,7 @@ Module.register("MMM-MQTTbridge", {
             break;
           }
         }
-        break;
+        continue;
       }
     }  
   },
