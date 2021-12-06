@@ -120,7 +120,7 @@ Module.register("MMM-MQTTbridge", {
         // if Payload is empty in config file --> send noti payload to mqtt
         for (var j = 0; j < this.config.notiDictionary.notiHook[i].notiPayload.length; j++) 
         {
-          if (this.config.notiDictionary.notiHook[i].notiPayload[j].payloadValue == payload || this.config.notiDictionary.notiHook[i].notiPayload[j].payloadValue == '') 
+          if (JSON.stringify(this.config.notiDictionary.notiHook[i].notiPayload[j].payloadValue) === JSON.stringify(payload) || this.config.notiDictionary.notiHook[i].notiPayload[j].payloadValue == '') 
           {
             // if NOTI ID and Payload found - search for Commands (could be an array of commands)
             for (var k = 0; k < this.config.notiDictionary.notiHook[i].notiPayload[j].notiMqttCmd.length; k++) 
@@ -133,11 +133,11 @@ Module.register("MMM-MQTTbridge", {
                   // If payloadValue is empty in notiDictionary --> send payload of Notification to MQTT - Otherwise send payload defined in notiDictionary
                   if (this.config.notiDictionary.notiHook[i].notiPayload[j].payloadValue == '') 
                   {
-                    this.publishNotiToMqtt(this.config.notiDictionary.notiMqttCommands[x].mqttTopic, payload.toString());
+                    this.publishNotiToMqtt(this.config.notiDictionary.notiMqttCommands[x].mqttTopic, JSON.stringify(payload));
                   } 
                   else 
                   {
-                    this.publishNotiToMqtt(this.config.notiDictionary.notiMqttCommands[x].mqttTopic, this.config.notiDictionary.notiMqttCommands[x].mqttMsgPayload.toString());
+                    this.publishNotiToMqtt(this.config.notiDictionary.notiMqttCommands[x].mqttTopic, JSON.stringify(this.config.notiDictionary.notiMqttCommands[x].mqttMsgPayload));
                   }
                   break;
                 }
