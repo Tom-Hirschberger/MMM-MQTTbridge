@@ -13,6 +13,7 @@ const NodeHelper = require('node_helper');
 const mqtt = require('mqtt');
 const { notiHook, notiMqttCommands } = require('./dict/notiDictionary.js'); //read the custom NOTI->MQTT rules from external files (they are in a config.notiDictionary )
 const { mqttHook, mqttNotiCommands } = require('./dict/mqttDictionary.js'); //read the custom MQTT->NOTI rules from external files (they are in a config.mqttDictionary )
+const fs = require('fs')
 
 module.exports = NodeHelper.create({
   start: function () {
@@ -26,8 +27,31 @@ module.exports = NodeHelper.create({
     var client;
 
     if (typeof self.clients[config.mqttServer] === "undefined" || self.clients[config.mqttServer].connected == false) {
-      client = mqtt.connect(config.mqttServer);
+      if (typeof config.mqttConfig.mqttClientKey === "undefined"){
+        console.log("[MQTT bridge] MQTT brocker uses unencrypted connection.");
+        client = mqtt.connect(config.mqttServer);
+      } else {
+        const options = {};
+        if (typeof config.mqttConfig.mqttClientKey !== "undefined") {
+          options["key"] = fs.readFileSync(config.mqttConfig.mqttClientKey);
+        }
+
+        if (typeof config.mqttConfig.mqttClientCert !== "undefined") {
+          options["cert"] = fs.readFileSync(config.mqttConfig.mqttClientCert);
+        }
+
+        if (typeof config.mqttConfig.caCert !== "undefined") {
+          options["ca"] = fs.readFileSync(config.mqttConfig.caCert);
+        }
+
+        options["rejectUnauthorized"] = config.mqttConfig.rejectUnauthorized;
+
+        console.log("[MQTT bridge] MQTT brocker uses encrypted connection.");
+        client = mqtt.connect(config.mqttServer, options);
+      }
+
       self.clients[config.mqttServer] = client;
+
 
       client.on('error', function (error) { //MQTT library function. Returns ERROR when connection to the broker could not be established.
         console.log("[MQTT bridge] MQTT brocker error: " + error);

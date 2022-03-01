@@ -21,6 +21,7 @@ Module.register("MMM-MQTTbridge", {
     },
     mqttConfig:
     {
+      rejectUnauthorized: true,
       listenMqtt: true,
       interval: 300000,
     },
