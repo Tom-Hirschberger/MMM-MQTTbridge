@@ -47,6 +47,34 @@ npm install
 },
 ```
 
+If you like to use a tls encrypted connection to your server you can use this example configuration:
+```js
+{
+	module: 'MMM-MQTTbridge',
+	disabled: false,
+	config: {
+		mqttServer: "mqtts://:@localhost:8883",
+		mqttConfig:
+		{
+			listenMqtt: true,
+			interval: 300000,
+      mqttClientKey: "/home/pi/client-key.pem",
+			mqttClientCert: "/home/pi/client-cert.pem",
+			caCert: "/home/pi/ca-cert.pem",
+			rejectUnauthorized: true,
+		},
+		notiConfig:
+		{
+			listenNoti: true,
+			ignoreNotiId: ["CLOCK_MINUTE", "NEWS_FEED"],
+			ignoreNotiSender: ["system", "NEWS_FEED"],
+		},
+		// set "NOTIFICATIONS -> MQTT" dictionary at /dict/notiDictionary.js
+		// set "MQTT -> NOTIFICATIONS" dictionary at /dict/mqttDictionary.js
+	},
+},
+```
+
 **3. Set dictionary files with your MQTT->NOTI and NOTI->MQTT rules**:
 - go to `cd ~/MagicMirror/modules/MMM-MQTTbridge/dict`
 - edit `notiDictionary.js` and `mqttDictionary.js` for respective rules according to the explanation below.
@@ -63,7 +91,11 @@ npm install
 ### GENERAL SECTION
 
 **MQTT part**
-- `mqttServer`set you server address using the following format:   "mqtt://"+USERNAME+":"+PASSWORD+"@"+IPADDRESS+":"+PORT. E.g. if you are using your broker *without username/password* on *localhost* with port *1883*, you config should looks "*mqtt://:@localhost:1883*",
+- `mqttServer` - set you server address using the following format:   "mqtt://"+USERNAME+":"+PASSWORD+"@"+IPADDRESS+":"+PORT or "mqtts://"+USERNAME+":"+PASSWORD+"@"+IPADDRESS+":"+PORT. E.g. if you are using your broker with plaintext connnection *without username/password* on *localhost* with port *1883*, you config should looks "*mqtt://:@localhost:1883*",
+- `mqttClientKey`- specify the path of the client tls key file (mandatory if using tls connetion). i.e. "/home/pi/client-key.pem";
+- `mqttClientCert` - specify the path of the client tls certificate file (mandatory if using tls connection). i.e. "/home/pi/client-cert.pem";
+- `caCert` - specify the path of the CA tls certificate file (mandatory if using tls connection). i.e. "/home/pi/ca-cert.pem";
+- `rejectUnauthorized`: specify if a self-signed server certificate should be rejected, default is true;
 - `listenMqtt` - turn on/off the listening of MQTT messages. Set to `false` if you are going to use only NOTI->MQTT dictionary to save CPU usage;
 - `interval` - interwal for MQTT status update, default is 300000ms.
 

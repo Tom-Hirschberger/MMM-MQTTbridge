@@ -21,6 +21,7 @@
   },
   "homepage": "https://github.com/sergge1/MMM-MQTTbridge#readme",
   "dependencies": {
-    "mqtt": "4.2.1"
+    "mqtt": "4.3.6",
+    "fs": "latest"
   }
 }
