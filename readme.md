@@ -90,6 +90,8 @@ If you like to use a tls encrypted connection to your server you can use this ex
 
 ### GENERAL SECTION
 
+- `stringifyPayload`- specify if the payload of notifications should be converted with "JSON.stringify" before it will be send as MQTT message, default is true. The setting can be overriden for each notification seperatly.
+
 **MQTT part**
 - `mqttServer` - set you server address using the following format:   "mqtt://"+USERNAME+":"+PASSWORD+"@"+IPADDRESS+":"+PORT or "mqtts://"+USERNAME+":"+PASSWORD+"@"+IPADDRESS+":"+PORT. E.g. if you are using your broker with plaintext connnection *without username/password* on *localhost* with port *1883*, you config should looks "*mqtt://:@localhost:1883*",
 - `mqttClientKey`- specify the path of the client tls key file (mandatory if using tls connetion). i.e. "/home/pi/client-key.pem";
@@ -111,7 +113,9 @@ If you like to use a tls encrypted connection to your server you can use this ex
 Should be set within `~/MagicMirror/modules/MMM-MQTTbridge/dict/notiDictionary.js`
 
 If payloadValue is empty, the actual payload of the notification will be used as MQTT payload.
-If payloadValue is specified and matches the payload received via the notification, mqttMsgPayload will be used as MQTT payload. 
+If payloadValue is specified and matches the payload received via the notification, mqttMsgPayload will be used as MQTT payload.
+
+You can configure if the payload of a notification should be stringified before it is send with the optional option "stringifyPayload". The default value is the one configured in the general section.
 
 **Please note, if your Noti issues boolean values (e.g. true/false) - you need to paste into notiDict 1 or 0 for true/false**.
 
@@ -135,6 +139,15 @@ var notiHook = [
       },
     ],
   },
+  {
+    notiId: "TOGGLE_SHELLY_PLUG",
+    notiPayload: [
+      {
+        payloadValue: '', 
+        notiMqttCmd: ["Command 3"]
+      },
+    ],
+  },
 ];
 var notiMqttCommands = [
   {
@@ -146,6 +159,12 @@ var notiMqttCommands = [
     commandId: "Command 2",
     mqttTopic: "myhome/kitchen/temperature",
     mqttMsgPayload: ''
+  },
+  {
+    commandId: "Command 3",
+    mqttTopic: "shellies/plug/relay/0/command",
+    stringifyPayload: false,
+    mqttMsgPayload: 'toogle'
   },
 ];
 ```
