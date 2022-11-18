@@ -13,6 +13,7 @@
 Module.register("MMM-MQTTbridge", {
   defaults: {
     mqttServer: "mqtt://:@localhost:1883",
+    stringifyPayload: true,
     notiConfig:
     {
       listenNoti: true,
@@ -130,15 +131,29 @@ Module.register("MMM-MQTTbridge", {
               {
                 if (this.config.notiDictionary.notiHook[i].notiPayload[j].notiMqttCmd[k] == this.config.notiDictionary.notiMqttCommands[x].commandId) 
                 {
+                  let curStringifyPayload
+                  if (typeof this.config.notiDictionary.notiMqttCommands[x].stringifyPayload !== "undefined"){
+                    curStringifyPayload = this.config.notiDictionary.notiMqttCommands[x].stringifyPayload
+                  } else {
+                    curStringifyPayload = this.config.stringifyPayload
+                  }
                   // if NOTI matched in the Dictionary, send respective MQTT message
                   // If payloadValue is empty in notiDictionary --> send payload of Notification to MQTT - Otherwise send payload defined in notiDictionary
                   if (this.config.notiDictionary.notiHook[i].notiPayload[j].payloadValue == '') 
                   {
-                    this.publishNotiToMqtt(this.config.notiDictionary.notiMqttCommands[x].mqttTopic, JSON.stringify(payload));
+                    if (curStringifyPayload){
+                      this.publishNotiToMqtt(this.config.notiDictionary.notiMqttCommands[x].mqttTopic, JSON.stringify(payload));
+                    } else {
+                      this.publishNotiToMqtt(this.config.notiDictionary.notiMqttCommands[x].mqttTopic, payload);
+                    }
                   } 
                   else 
                   {
-                    this.publishNotiToMqtt(this.config.notiDictionary.notiMqttCommands[x].mqttTopic, JSON.stringify(this.config.notiDictionary.notiMqttCommands[x].mqttMsgPayload));
+                    if (curStringifyPayload){
+                      this.publishNotiToMqtt(this.config.notiDictionary.notiMqttCommands[x].mqttTopic, JSON.stringify(this.config.notiDictionary.notiMqttCommands[x].mqttMsgPayload));
+                    } else {
+                      this.publishNotiToMqtt(this.config.notiDictionary.notiMqttCommands[x].mqttTopic, this.config.notiDictionary.notiMqttCommands[x].mqttMsgPayload);
+                    }
                   }
                   break;
                 }
