@@ -217,6 +217,7 @@ var mqttNotiCommands = [
   
 
 ## CREDITS
+[@Tom-Hirschberger](https://github.com/Tom-Hirschberger)
 
 [@bugsounet](https://github.com/bugsounet)
 
