@@ -200,7 +200,6 @@ Module.register("MMM-MQTTbridge", {
     var sndname = "system"; //sender name default is "system"
 
     if (!sender === false) { sndname = sender.name; }; //if no SENDER specified in NOTIFICATION, the SENDER is left as "system" (according to MM documentation), otherwise - use sender name
-    var self = this;
     
     // exclude NOTIFICATIONS where SENDER in ignored list
     for (var x in self.config.notiConfig.ignoreNotiSender) 
