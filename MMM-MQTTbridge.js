@@ -14,30 +14,8 @@ Module.register("MMM-MQTTbridge", {
     mqttServer: "mqtt://:@localhost:1883",
     stringifyPayload: true,
     defaultRelay: false,
-    notiConfig: {},
-    mqttConfig: {},
-
-    // MQTT -> NOTI rules Dictionary - should be set in this structure within ./dict/mqttDictionary.js
-    mqttDictionary: {
-    },
-
-    // NOTIF -> MQTT rules Dictionary - should be set in this structure within ./dict/notiDictionary.js
-    notiDictionary: {
-      notiHook: [
-        {
-          notiId: "",
-          notiPayload: "",
-          notiMqttCmd: [],
-        }
-      ],
-      notiMqttCommands: [
-        {
-          commandId: "",
-          mqttTopic: "",
-          mqttMsgPayload: [],
-        }
-      ]
-    },
+    notiConfig: {}, //default values will be set in start function
+    mqttConfig: {}, //default values will be set in start function
   },
 
   start: function () {
@@ -48,13 +26,13 @@ Module.register("MMM-MQTTbridge", {
       retain: false,
       clean: true,
       rejectUnauthorized: true,
-      listenMqtt: true,
+      listenMqtt: false,
       interval: 300000,
     },self.config.mqttConfig)
     
     self.config.notiConfig = Object.assign({
       qos: 0,
-      listenNoti: true,
+      listenNoti: false,
       ignoreNotiId: [],
       ignoreNotiSender: [],
     },self.config.notiConfig)
