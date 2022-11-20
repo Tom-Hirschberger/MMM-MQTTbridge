@@ -141,7 +141,7 @@ module.exports = NodeHelper.create({
             self.notiHook = notiHook
             self.notiMqttCommands = notiMqttCommands
           } catch {
-            console.log("[MQTT bridge] ERROR: Could not configuration "+notiDictPath+". Starting without configuration!")
+            console.log("[MQTT bridge] ERROR: Could not read configuration "+notiDictPath+". Starting without configuration!")
           }
 
           let mqttDictPath = path.join(moduleDir,self.config.mqttDictConf)
@@ -151,7 +151,7 @@ module.exports = NodeHelper.create({
             self.mqttHook = mqttHook
             self.mqttNotiCommands = mqttNotiCommands
           } catch {
-            console.log("[MQTT bridge] ERROR: Could not configuration "+mqttDictPath+". Starting without configuration!")
+            console.log("[MQTT bridge] ERROR: Could not read configuration "+mqttDictPath+". Starting without configuration!")
           }
 
           for (let idx = 0; idx < self.notiHook.length; idx ++){
