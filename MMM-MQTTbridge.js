@@ -52,7 +52,6 @@ Module.register("MMM-MQTTbridge", {
     self.cmqttHook = {}
     self.cmqttNotiCommands = {}
     self.ctopicsWithJsonpath = {}
-    self.cnotisWithJsonpath = {}
   },
 
   validateCondition: function(source, value, type){
@@ -298,7 +297,6 @@ Module.register("MMM-MQTTbridge", {
         self.cmqttHook = payload.cmqttHook;
         self.cmqttNotiCommands = payload.cmqttNotiCommands;
         self.ctopicsWithJsonpath = payload.ctopicsWithJsonpath;
-        self.cnotisWithJsonpath = payload.cnotisWithJsonpath;
         break;
     }
   },

@@ -123,7 +123,6 @@ module.exports = NodeHelper.create({
                                                       "cmqttHook": self.converted.mqttHook,
                                                       "cnotiMqttCommands": self.converted.notiMqttCommands,
                                                       "cmqttNotiCommands": self.converted.mqttNotiCommands,
-                                                      "cnotisWithJsonpath": self.converted.notisWithJsonpath,
                                                       "ctopicsWithJsonpath": self.converted.topicsWithJsonpath
                                                     });
         break;
@@ -168,15 +167,6 @@ module.exports = NodeHelper.create({
               let curArray = self.converted.notiHook[curId] || []
               curArray = curArray.concat(self.notiHook[idx].notiPayload)
               self.converted.notiHook[curId] = curArray
-
-              for (let curPayloadIdx = 0; curPayloadIdx < self.notiHook[idx].notiPayload.length; curPayloadIdx++){
-                let curPayloadObj = self.notiHook[idx].notiPayload[curPayloadIdx]
-                if(typeof curPayloadObj.jsonpath !== "undefined"){
-                  let curResultObj = self.converted.notisWithJsonpath[curId] || {}
-                  curResultObj[curPayloadObj.jsonpath] = null
-                  self.converted.notisWithJsonpath[curId] = curResultObj
-                }
-              }
             }
           }
       
