@@ -4,211 +4,230 @@
 
 /* Magic Mirror
  * Module: MMM-MQTTbridge
- *
- * Forked from @sergge1
- * Modified by DanielHfnr
  * MIT Licensed.
  */
 
 Module.register("MMM-MQTTbridge", {
   defaults: {
+    mqttDictConf: "./dict/mqttDictionary.js",
+    notiDictConf: "./dict/notiDictionary.js",
     mqttServer: "mqtt://:@localhost:1883",
     stringifyPayload: true,
-    notiConfig:
-    {
-      listenNoti: true,
-      ignoreNotiId: [],
-      ignoreNotiSender: [],
-    },
-    mqttConfig:
-    {
-      rejectUnauthorized: true,
-      listenMqtt: true,
-      interval: 300000,
-    },
-
-    // MQTT -> NOTI rules Dictionary - should be set in this structure within ./dict/mqttDictionary.js
-    mqttDictionary: {
-    },
-
-    // NOTIF -> MQTT rules Dictionary - should be set in this structure within ./dict/notiDictionary.js
-    notiDictionary: {
-      notiHook: [
-        {
-          notiId: "",
-          notiPayload: "",
-          notiMqttCmd: [],
-        }
-      ],
-      notiMqttCommands: [
-        {
-          commandId: "",
-          mqttTopic: "",
-          mqttMsgPayload: [],
-        }
-      ]
-    },
+    notiConfig: {}, //default values will be set in start function
+    mqttConfig: {}, //default values will be set in start function
   },
 
   start: function () {
-    Log.info("Starting module: " + this.name);
-    this.loaded = false;
-    this.mqttVal = "";
-    this.updateMqtt(this);
+    const self = this
+    Log.info("Starting module: " + self.name);
+    self.config.mqttConfig = Object.assign({
+      qos: 0,
+      retain: false,
+      clean: true,
+      rejectUnauthorized: true,
+      listenMqtt: false,
+      interval: 300000,
+    },self.config.mqttConfig)
+    
+    self.config.notiConfig = Object.assign({
+      qos: 0,
+      listenNoti: false,
+      ignoreNotiId: [],
+      ignoreNotiSender: [],
+    },self.config.notiConfig)
+
+    self.sendSocketNotification("CONFIG", self.config);
+    self.loaded = false;
+    self.mqttVal = "";
+    setTimeout(() => {
+      self.updateMqtt();
+    }, 500);
+    self.cnotiHook = {}
+    self.cnotiMqttCommands = {}
+    self.cmqttHook = {}
+    self.cmqttNotiCommands = {}
   },
 
-  updateMqtt: function (self) {
-    self.sendSocketNotification("MQTT_BRIDGE_CONNECT", { mqttServer: self.config.mqttServer, mqttDictionary: self.config.mqttDictionary, mqttConfig: self.config.mqttConfig }); //request to connect to the MQTT broker
-    setTimeout(self.updateMqtt, self.config.mqttConfig.interval, self);
+  updateMqtt: function () {
+    const self = this
+    self.sendSocketNotification("MQTT_BRIDGE_CONNECT"); //request to connect to the MQTT broker
+
+    setTimeout(() => {
+      self.updateMqtt();
+    }, self.config.mqttConfig.interval);
   },
 
-  publishNotiToMqtt: function(topic, payload) {
-    this.sendSocketNotification("MQTT_MESSAGE_SEND", {
-      mqttServer: this.config.mqttServer,
+  publishNotiToMqtt: function(topic, payload, options = {}) {
+    const self = this
+    self.sendSocketNotification("MQTT_MESSAGE_SEND", {
+      mqttServer: self.config.mqttServer,
       topic: topic,
       payload: payload,
+      options: options
     });
   },
 
   mqttToNoti: function (payload) {
-    // go through MQTT DICTIONARY
-    for (var i = 0; i < this.config.mqttDictionary.mqttHook.length; i++) 
-    {
-      // search topic specified in mqttDictionary
-      if (payload.topic == this.config.mqttDictionary.mqttHook[i].mqttTopic)
-      {
-        for (var k = 0; k < this.config.mqttDictionary.mqttHook[i].mqttPayload.length; k++) 
-        {
-          // When payloadValue is specified in mqttDictionary and matches the actual payload --> continue
-          // If payloadValue in mqttDictionary is empty --> continue
-          if (this.config.mqttDictionary.mqttHook[i].mqttPayload[k].payloadValue == payload.data || this.config.mqttDictionary.mqttHook[i].mqttPayload[k].payloadValue == '') 
-          {
-            // search COMMAND within COMMAND list
-            for (var j = 0; j < this.config.mqttDictionary.mqttHook[i].mqttPayload[k].mqttNotiCmd.length; j++) 
-            {
-              for (var x in this.config.mqttDictionary.mqttNotiCommands) 
-              { 
-                if (this.config.mqttDictionary.mqttHook[i].mqttPayload[k].mqttNotiCmd[j] == this.config.mqttDictionary.mqttNotiCommands[x].commandId) 
-                {
-                  // Decision: Send payload specified in the mqttDictionary oder send the actual payload of mqtt message
-                  if (this.config.mqttDictionary.mqttHook[i].mqttPayload[k].payloadValue == '') 
-                  {
-                    this.sendNotification(this.config.mqttDictionary.mqttNotiCommands[x].notiID, payload.data);
-                    this.sendSocketNotification("LOG","[MQTT bridge] MQTT -> NOTI issued: " + this.config.mqttDictionary.mqttNotiCommands[x].notiID + ", payload: "+ payload.data);
-                  } 
-                  else 
-                  {
-                    this.sendNotification(this.config.mqttDictionary.mqttNotiCommands[x].notiID, this.config.mqttDictionary.mqttNotiCommands[x].notiPayload);
-                    this.sendSocketNotification("LOG","[MQTT bridge] MQTT -> NOTI issued: " + this.config.mqttDictionary.mqttNotiCommands[x].notiID + ", payload: "+ this.config.mqttDictionary.mqttNotiCommands[x].notiPayload);
-                  }  
-                  break;
-                }
+    const self = this
+    let msg = payload.data
+    let curMqttHook = self.cmqttHook[payload.topic]
+
+    for(let curHookIdx=0; curHookIdx < curMqttHook.length; curHookIdx++){
+      let curHookConfig = curMqttHook[curHookIdx]
+      // {
+      //   payloadValue: '{"state": "ON"}',
+      //   mqttNotiCmd: ["Command 1"]
+      // },
+      if ( 
+        (typeof curHookConfig.payloadValue === "undefined") ||
+        (curHookConfig.payloadValue == msg)
+      ){
+        let mqttCmds = curHookConfig.mqttNotiCmd || []
+        for(let curCmdIdx = 0; curCmdIdx < mqttCmds.length; curCmdIdx++){
+          let curCmdConfigs = self.cmqttNotiCommands[mqttCmds[curCmdIdx]]
+          for(let curCmdConfIdx = 0; curCmdConfIdx < curCmdConfigs.length; curCmdConfIdx++){
+            let curCmdConf = curCmdConfigs[curCmdConfIdx]
+            // {
+            //   commandId: "Command 1",
+            //   notiID: "REMOTE_ACTION",
+            //   notiPayload: {action: 'MONITORON'}
+            // },
+            if (typeof curCmdConf.notiID !== "undefined"){
+              if (typeof curCmdConf.notiPayload === "undefined") {
+                self.sendNotification(curCmdConf.notiID, msg)
+                this.sendSocketNotification("LOG","[MQTT bridge] MQTT -> NOTI issued: " + curCmdConf.notiID + ", payload: "+ msg);
+              } else {
+                self.sendNotification(curCmdConf.notiID, curCmdConf.notiPayload)
+                this.sendSocketNotification("LOG","[MQTT bridge] MQTT -> NOTI issued: " + curCmdConf.notiID + ", payload: "+ JSON.stringify(curCmdConf.notiPayload));
               }
+            } else {
+              this.sendSocketNotification("LOG","[MQTT bridge] MQTT -> NOTI error: Skipping notification cause \"notiID\" is missing. "+JSON.stringify(curCmdConf));
             }
-            break;
           }
         }
-        break;
       }
-    }   
+    }
   },
 
   notiToMqtt: function(notification, payload) {
-    // search NOTIFICATIONS and PAYLOADS within DICTIONARY. start with NOTI ID
-    for (var i = 0; i < this.config.notiDictionary.notiHook.length; i++) 
-    {
-      if (this.config.notiDictionary.notiHook[i].notiId === notification) 
-      {
-        // if Payload is empty in config file --> send noti payload to mqtt
-        for (var j = 0; j < this.config.notiDictionary.notiHook[i].notiPayload.length; j++) 
-        {
-          if (JSON.stringify(this.config.notiDictionary.notiHook[i].notiPayload[j].payloadValue) === JSON.stringify(payload) || this.config.notiDictionary.notiHook[i].notiPayload[j].payloadValue == '') 
-          {
-            // if NOTI ID and Payload found - search for Commands (could be an array of commands)
-            for (var k = 0; k < this.config.notiDictionary.notiHook[i].notiPayload[j].notiMqttCmd.length; k++) 
-            {
-              for (var x in this.config.notiDictionary.notiMqttCommands) 
-              {
-                if (this.config.notiDictionary.notiHook[i].notiPayload[j].notiMqttCmd[k] == this.config.notiDictionary.notiMqttCommands[x].commandId) 
-                {
-                  let curStringifyPayload
-                  if (typeof this.config.notiDictionary.notiMqttCommands[x].stringifyPayload !== "undefined"){
-                    curStringifyPayload = this.config.notiDictionary.notiMqttCommands[x].stringifyPayload
-                  } else {
-                    curStringifyPayload = this.config.stringifyPayload
-                  }
-                  // if NOTI matched in the Dictionary, send respective MQTT message
-                  // If payloadValue is empty in notiDictionary --> send payload of Notification to MQTT - Otherwise send payload defined in notiDictionary
-                  if (this.config.notiDictionary.notiHook[i].notiPayload[j].payloadValue == '') 
-                  {
-                    if (curStringifyPayload){
-                      this.publishNotiToMqtt(this.config.notiDictionary.notiMqttCommands[x].mqttTopic, JSON.stringify(payload));
-                    } else {
-                      this.publishNotiToMqtt(this.config.notiDictionary.notiMqttCommands[x].mqttTopic, payload);
-                    }
-                  } 
-                  else 
-                  {
-                    if (curStringifyPayload){
-                      this.publishNotiToMqtt(this.config.notiDictionary.notiMqttCommands[x].mqttTopic, JSON.stringify(this.config.notiDictionary.notiMqttCommands[x].mqttMsgPayload));
-                    } else {
-                      this.publishNotiToMqtt(this.config.notiDictionary.notiMqttCommands[x].mqttTopic, this.config.notiDictionary.notiMqttCommands[x].mqttMsgPayload);
-                    }
-                  }
-                  break;
+    const self = this
+    let curNotiHooks = self.cnotiHook[notification]
+    for(let curHookIdx = 0; curHookIdx < curNotiHooks.length; curHookIdx++){
+      let curHookConfig = curNotiHooks[curHookIdx]
+      // {
+      //   payloadValue: true, 
+      //   notiMqttCmd: ["SCREENON"]
+      // },
+      if ( 
+        (typeof curHookConfig.payloadValue === "undefined") ||
+        (JSON.stringify(curHookConfig.payloadValue) == JSON.stringify(payload))
+      ){
+        let notiCmds = curHookConfig.notiMqttCmd || []
+        for(let curCmdIdx = 0; curCmdIdx < notiCmds.length; curCmdIdx++){
+          let curCmdConfigs = self.cnotiMqttCommands[notiCmds[curCmdIdx]]
+          for(let curCmdConfIdx = 0; curCmdConfIdx < curCmdConfigs.length; curCmdConfIdx++){
+            let curCmdConf = curCmdConfigs[curCmdConfIdx]
+            // {
+            //   commandId: "SCREENON",
+            //   mqttTopic: "magicmirror/state",
+            //   mqttMsgPayload: '{"state":"ON"}',
+            //   options: {"qos": 1, "retain": false},
+            //   retain: true,
+            //   qos: 0
+            // },
+            if (typeof curCmdConf.mqttTopic !== "undefined"){
+              let curStringifyPayload
+              if(typeof curCmdConf.stringifyPayload !== "undefined"){
+                curStringifyPayload = curCmdConf.stringifyPayload
+              } else {
+                curStringifyPayload = self.config.stringifyPayload
+              }
+              let msg
+              if (typeof curCmdConf.mqttMsgPayload === "undefined") {
+                if(curStringifyPayload){
+                  msg = JSON.stringify(payload)
+                } else {
+                  msg = payload
+                }
+              } else {
+                if(curStringifyPayload){
+                  msg = JSON.stringify(curCmdConf.mqttMsgPayload)
+                } else {
+                  msg = curCmdConf.mqttMsgPayload
                 }
               }
+
+              let curOptions = curCmdConf.options || {}
+              
+              if (typeof curCmdConf.retain !== "undefined"){
+                curOptions["retain"] = curCmdConf.retain
+              } else {
+                curOptions["retain"] = self.config.mqttConfig.retain
+              }
+              if (typeof curCmdConf.qos !== "undefined"){
+                curOptions["qos"] = curCmdConf.qos
+              } else {
+                curOptions["qos"] = self.config.mqttConfig.qos
+              }
+
+              self.publishNotiToMqtt(curCmdConf.mqttTopic, msg, curOptions);
+            } else {
+              this.sendSocketNotification("LOG","[MQTT bridge] NOTI -> MQTT error: Skipping mqtt publish cause \"mqttTopic\" is missing. " + JSON.stringify(curCmdConf));
             }
-            break;
           }
         }
-        continue;
       }
-    }  
+    }
   },
 
   socketNotificationReceived: function (notification, payload) {
+    const self = this
     switch (notification) {
       // START MQTT to NOTI logic
       case "MQTT_MESSAGE_RECEIVED":
-        this.mqttToNoti(payload);
+        self.mqttToNoti(payload);
         break;
       // END of MQTT to NOTI logic
       case "ERROR":
-        this.sendNotification("SHOW_ALERT", payload);
+        self.sendNotification("SHOW_ALERT", payload);
         break;
       case "DICTIONARIES": //use dictionaries from external files at module sturt-up
-        this.config.notiDictionary.notiHook = payload.notiHook;
-        this.config.notiDictionary.notiMqttCommands = payload.notiMqttCommands;
-        this.config.mqttDictionary.mqttHook = payload.mqttHook;
-        this.config.mqttDictionary.mqttNotiCommands = payload.mqttNotiCommands;
+        self.cnotiHook = payload.cnotiHook;
+        self.cnotiMqttCommands = payload.cnotiMqttCommands;
+        self.cmqttHook = payload.cmqttHook;
+        self.cmqttNotiCommands = payload.cmqttNotiCommands;
         break;
     }
   },
 
   notificationReceived: function (notification, payload, sender) {
+    const self = this
     // START of NOTIFICATIONS to MQTT logic
 
     // Filtering...
-    if (!this.config.notiConfig.listenNoti) { return; } // check whether we need to listen for the NOTIFICATIONS. Return if "false"
+    if (!self.config.notiConfig.listenNoti) { return; } // check whether we need to listen for the NOTIFICATIONS. Return if "false"
     var sndname = "system"; //sender name default is "system"
 
     if (!sender === false) { sndname = sender.name; }; //if no SENDER specified in NOTIFICATION, the SENDER is left as "system" (according to MM documentation), otherwise - use sender name
-    var self = this;
     
     // exclude NOTIFICATIONS where SENDER in ignored list
-    for (var x in this.config.notiConfig.ignoreNotiSender) 
+    for (var x in self.config.notiConfig.ignoreNotiSender) 
     {
-      if (sndname == this.config.notiConfig.ignoreNotiSender[x]) { return; }
+      if (sndname == self.config.notiConfig.ignoreNotiSender[x]) { return; }
     }
     // exclude NOTIFICATIONS where NOTIFICATION ID in ignored list
-    for (var x in this.config.notiConfig.ignoreNotiId) 
+    for (var x in self.config.notiConfig.ignoreNotiId) 
     {
-      if (notification == this.config.notiConfig.ignoreNotiId[x]) { return; }
+      if (notification == self.config.notiConfig.ignoreNotiId[x]) { return; }
     }
 
-
-    this.notiToMqtt(notification, payload);
+    if (typeof self.cnotiHook[notification] !== "undefined"){
+      if (typeof payload !== "undefined"){
+        self.notiToMqtt(notification, payload);
+      } else {
+        self.notiToMqtt(notification, "");
+      }
+    }
   }
   // END of NOTIFICATIONS to MQTT logic
 });
