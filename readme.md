@@ -131,7 +131,7 @@ If you like to use a tls encrypted connection to your server you can use this ex
 
 Should be set within `~/MagicMirror/modules/MMM-MQTTbridge/dict/notiDictionary.js` or the path you configured with the general configuration option `notiDictConf`.
 
-**Warning**
+:warning:
 The configuration of how to ignore the payload value of notifications or send the payload of notifications as mqtt messages changed slightly with version 2.0 of the module!
 
 If the `payloadValue` is missing for a `notiPayload` element all commands configured in `notiMqttCmd` will be initiated independent of the value of the notification payload (new since version 2.0 of the module)!  
@@ -143,7 +143,7 @@ If `mqttMsgPayload` is present the value of `mqttMsgPayload` will be send as MQT
 
 You can configure if the payload of a notification should be stringified before it is send with the optional option "stringifyPayload". The default value is the one configured in the general section.
 
-**Warning**
+:warning:
 The way boolean values as payload of notifications are treated changed with version 2.0 of the module. NO NEED TO CONVERT THEM TO 0 OR 1 ANYMORE!!!
 
 As of version 2.0 of the module it is possible to specify `qos`, `retain` settings for each `notiMqttCommands` element. If present these settings override the default values of the general configuration.
@@ -230,7 +230,7 @@ var notiMqttCommands = [
 
 Should be set within `~/MagicMirror/modules/MMM-MQTTbridge/dict/mqttDictionary.js` or the path you configured with the general configuration option `mqttDictConf`.
 
-**Warning**
+:warning:
 The configuration of how to ignore the payload value of mqtt messages or send the payload of mqtt message as notification payload changed slightly with version 2.0 of the module!
 
 If the `payloadValue` is missing for a `mqttPayload` element all commands configured in `mqttNotiCmd` will be initiated independent of the value of mqtt message (new since version 2.0 of the module)!  
