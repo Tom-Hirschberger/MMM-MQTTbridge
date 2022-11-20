@@ -11,7 +11,7 @@ const mqtt = require('mqtt');
 
 const fs = require('fs')
 const path = require('path')
-const moduleDir = path.join(__dirname)
+const moduleDir = __dirname
 
 module.exports = NodeHelper.create({
   start: function () {
