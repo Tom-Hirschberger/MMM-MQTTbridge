@@ -13,9 +13,14 @@ Module.register("MMM-MQTTbridge", {
     notiDictConf: "./dict/notiDictionary.js",
     mqttServer: "mqtt://:@localhost:1883",
     stringifyPayload: true,
+    newlineReplacement: " ",
     notiConfig: {}, //default values will be set in start function
     mqttConfig: {}, //default values will be set in start function
   },
+
+  getScripts: function () {
+		return [this.file('node_modules/jsonpath-plus/dist/index-browser-umd.js')];
+	},
 
   start: function () {
     const self = this
@@ -46,7 +51,47 @@ Module.register("MMM-MQTTbridge", {
     self.cnotiMqttCommands = {}
     self.cmqttHook = {}
     self.cmqttNotiCommands = {}
+    self.ctopicsWithJsonpath = {}
+    self.cnotisWithJsonpath = {}
   },
+
+  validateCondition: function(source, value, type){
+    if (type == "eq"){
+      return source === value
+    } else if (type == "incl"){
+      return source.includes(value)
+    } else if (type == "mt") {
+      return new RegExp(value).test(source)
+    } else if (type == "lt"){
+      return source < value
+    } else if (type == "le"){
+      return source <= value
+    } else if (type == "gt"){
+      return source > value
+    } else if (type == "ge"){
+      return source >= value
+    }
+
+    return false
+  },
+
+  //https://stackoverflow.com/questions/3710204/how-to-check-if-a-string-is-a-valid-json-string
+	tryParseJSONObject: function (jsonString) {
+		try {
+			var o = JSON.parse(jsonString);
+
+			// Handle non-exception-throwing cases:
+			// Neither JSON.parse(false) or JSON.parse(1234) throw errors, hence the type-checking,
+			// but... JSON.parse(null) returns null, and typeof null === "object",
+			// so we must check for that, too. Thankfully, null is falsey, so this suffices:
+			if (o && typeof o === "object") {
+				return o;
+			}
+		}
+		catch (e) { }
+
+		return false;
+	},
 
   updateMqtt: function () {
     const self = this
@@ -72,36 +117,84 @@ Module.register("MMM-MQTTbridge", {
     let msg = payload.data
     let curMqttHook = self.cmqttHook[payload.topic]
 
+    //if there are configured jsonpath settings for this topic we create the json object and the jsonpath values
+    //this way they only get calculated once even if they are used by more than one element
+    if (typeof self.ctopicsWithJsonpath[payload.topic] !== "undefined"){
+      let jsonObj = self.tryParseJSONObject(msg)
+      if (jsonObj != false){
+        for(let curPath in self.ctopicsWithJsonpath[payload.topic]){
+          let value  = JSONPath.JSONPath({ path: curPath, json: jsonObj });
+          if(Array.isArray(value) && (value.length == 1)){
+            value = value[0]
+          }
+
+          self.ctopicsWithJsonpath[payload.topic][curPath] = value
+        }
+      }
+    }
+
     for(let curHookIdx=0; curHookIdx < curMqttHook.length; curHookIdx++){
       let curHookConfig = curMqttHook[curHookIdx]
       // {
       //   payloadValue: '{"state": "ON"}',
       //   mqttNotiCmd: ["Command 1"]
       // },
+      let value = msg
+      if(typeof curHookConfig.jsonpath !== "undefined") {
+        value = self.ctopicsWithJsonpath[payload.topic][curHookConfig.jsonpath]
+        if(value == null){
+          this.sendSocketNotification("LOG","[MQTT bridge] Invalid JSON: There is configured a jsonpath setting for topic "+payload.topic + " but the message: "+msg+" is not a valid JSON. Using original value instead!");
+          value = msg
+        }
+      }
+      
+      if (typeof curHookConfig.valueFormat !== "undefined") {
+        let newlineReplacement = curHookConfig.newlineReplacement || self.config.newlineReplacement
+        if (newlineReplacement != null) {
+          value = String(value).replace(/(?:\r\n|\r|\n)/g, newlineReplacement)
+        }
+        value = eval(eval("`" + curHookConfig.valueFormat + "`"))
+      }
+
       if ( 
         (typeof curHookConfig.payloadValue === "undefined") ||
-        (curHookConfig.payloadValue == msg)
+        (curHookConfig.payloadValue == value)
       ){
-        let mqttCmds = curHookConfig.mqttNotiCmd || []
-        for(let curCmdIdx = 0; curCmdIdx < mqttCmds.length; curCmdIdx++){
-          let curCmdConfigs = self.cmqttNotiCommands[mqttCmds[curCmdIdx]]
-          for(let curCmdConfIdx = 0; curCmdConfIdx < curCmdConfigs.length; curCmdConfIdx++){
-            let curCmdConf = curCmdConfigs[curCmdConfIdx]
-            // {
-            //   commandId: "Command 1",
-            //   notiID: "REMOTE_ACTION",
-            //   notiPayload: {action: 'MONITORON'}
-            // },
-            if (typeof curCmdConf.notiID !== "undefined"){
-              if (typeof curCmdConf.notiPayload === "undefined") {
-                self.sendNotification(curCmdConf.notiID, msg)
-                this.sendSocketNotification("LOG","[MQTT bridge] MQTT -> NOTI issued: " + curCmdConf.notiID + ", payload: "+ msg);
-              } else {
-                self.sendNotification(curCmdConf.notiID, curCmdConf.notiPayload)
-                this.sendSocketNotification("LOG","[MQTT bridge] MQTT -> NOTI issued: " + curCmdConf.notiID + ", payload: "+ JSON.stringify(curCmdConf.notiPayload));
+        let conditionsValid = true
+        if (typeof curHookConfig.conditions !== "undefined"){
+          for(let curCondIdx = 0; curCondIdx < curHookConfig.conditions.length; curCondIdx++){
+            let curCondition = curHookConfig.conditions[curCondIdx]
+            if((typeof curCondition["type"] !== "undefined") && (typeof curCondition["value"] !== "undefined")){
+              if(!self.validateCondition(value,curCondition["value"],curCondition["type"])){
+                conditionsValid = false
+                break
               }
-            } else {
-              this.sendSocketNotification("LOG","[MQTT bridge] MQTT -> NOTI error: Skipping notification cause \"notiID\" is missing. "+JSON.stringify(curCmdConf));
+            }
+          }
+        }
+
+        if (conditionsValid){
+          let mqttCmds = curHookConfig.mqttNotiCmd || []
+          for(let curCmdIdx = 0; curCmdIdx < mqttCmds.length; curCmdIdx++){
+            let curCmdConfigs = self.cmqttNotiCommands[mqttCmds[curCmdIdx]]
+            for(let curCmdConfIdx = 0; curCmdConfIdx < curCmdConfigs.length; curCmdConfIdx++){
+              let curCmdConf = curCmdConfigs[curCmdConfIdx]
+              // {
+              //   commandId: "Command 1",
+              //   notiID: "REMOTE_ACTION",
+              //   notiPayload: {action: 'MONITORON'}
+              // },
+              if (typeof curCmdConf.notiID !== "undefined"){
+                if (typeof curCmdConf.notiPayload === "undefined") {
+                  self.sendNotification(curCmdConf.notiID, value)
+                  this.sendSocketNotification("LOG","[MQTT bridge] MQTT -> NOTI issued: " + curCmdConf.notiID + ", payload: "+ value);
+                } else {
+                  self.sendNotification(curCmdConf.notiID, curCmdConf.notiPayload)
+                  this.sendSocketNotification("LOG","[MQTT bridge] MQTT -> NOTI issued: " + curCmdConf.notiID + ", payload: "+ JSON.stringify(curCmdConf.notiPayload));
+                }
+              } else {
+                this.sendSocketNotification("LOG","[MQTT bridge] MQTT -> NOTI error: Skipping notification cause \"notiID\" is missing. "+JSON.stringify(curCmdConf));
+              }
             }
           }
         }
@@ -196,6 +289,8 @@ Module.register("MMM-MQTTbridge", {
         self.cnotiMqttCommands = payload.cnotiMqttCommands;
         self.cmqttHook = payload.cmqttHook;
         self.cmqttNotiCommands = payload.cmqttNotiCommands;
+        self.ctopicsWithJsonpath = payload.ctopicsWithJsonpath;
+        self.cnotisWithJsonpath = payload.cnotisWithJsonpath;
         break;
     }
   },
