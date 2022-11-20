@@ -13,7 +13,7 @@ Module.register("MMM-MQTTbridge", {
     notiDictConf: "./dict/notiDictionary.js",
     mqttServer: "mqtt://:@localhost:1883",
     stringifyPayload: true,
-    newlineReplacement: " ",
+    newlineReplacement: null,
     notiConfig: {}, //default values will be set in start function
     mqttConfig: {}, //default values will be set in start function
   },
@@ -140,6 +140,8 @@ Module.register("MMM-MQTTbridge", {
       //   mqttNotiCmd: ["Command 1"]
       // },
       let value = msg
+      //if a jsonpath is configured in commad configuration we use the pre-calculated value now
+      //if the message was not a valid JSON we still use the raw value and write a message to the log instead
       if(typeof curHookConfig.jsonpath !== "undefined") {
         value = self.ctopicsWithJsonpath[payload.topic][curHookConfig.jsonpath]
         if(value == null){
@@ -147,7 +149,9 @@ Module.register("MMM-MQTTbridge", {
           value = msg
         }
       }
-      
+
+      //now we need to replace all new lines in the message if "newlineReplacement" is configured
+      //either in the global option or special in this configuration
       if (typeof curHookConfig.valueFormat !== "undefined") {
         let newlineReplacement = curHookConfig.newlineReplacement || self.config.newlineReplacement
         if (newlineReplacement != null) {
@@ -156,10 +160,13 @@ Module.register("MMM-MQTTbridge", {
         value = eval(eval("`" + curHookConfig.valueFormat + "`"))
       }
 
+      //now that we have the parsed and replaced value we can check if the payloadValue is matched (if payloadValue is present)
       if ( 
         (typeof curHookConfig.payloadValue === "undefined") ||
         (curHookConfig.payloadValue == value)
       ){
+        //if additional conditions are configured we will now check if all of them match
+        //only if all of them match further processing is done
         let conditionsValid = true
         if (typeof curHookConfig.conditions !== "undefined"){
           for(let curCondIdx = 0; curCondIdx < curHookConfig.conditions.length; curCondIdx++){
@@ -173,6 +180,7 @@ Module.register("MMM-MQTTbridge", {
           }
         }
 
+        //if all preconditions met we process the command configurations now
         if (conditionsValid){
           let mqttCmds = curHookConfig.mqttNotiCmd || []
           for(let curCmdIdx = 0; curCmdIdx < mqttCmds.length; curCmdIdx++){
