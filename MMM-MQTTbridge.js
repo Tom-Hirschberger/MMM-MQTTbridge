@@ -103,7 +103,6 @@ Module.register("MMM-MQTTbridge", {
       // },
       if ( 
         (typeof curHookConfig.payloadValue === "undefined") ||
-        (curHookConfig.payloadValue == null) ||
         (curHookConfig.payloadValue == msg)
       ){
         let mqttCmds = curHookConfig.mqttNotiCmd || []
@@ -144,7 +143,6 @@ Module.register("MMM-MQTTbridge", {
       // },
       if ( 
         (typeof curHookConfig.payloadValue === "undefined") ||
-        (curHookConfig.payloadValue == null) ||
         (JSON.stringify(curHookConfig.payloadValue) == JSON.stringify(payload))
       ){
         let notiCmds = curHookConfig.notiMqttCmd || []
