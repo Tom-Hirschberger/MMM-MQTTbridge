@@ -13,7 +13,6 @@ Module.register("MMM-MQTTbridge", {
     notiDictConf: "./dict/notiDictionary.js",
     mqttServer: "mqtt://:@localhost:1883",
     stringifyPayload: true,
-    defaultRelay: false,
     notiConfig: {}, //default values will be set in start function
     mqttConfig: {}, //default values will be set in start function
   },
@@ -223,7 +222,11 @@ Module.register("MMM-MQTTbridge", {
     }
 
     if (typeof self.cnotiHook[notification] !== "undefined"){
-      self.notiToMqtt(notification, payload);
+      if (typeof payload !== "undefined"){
+        self.notiToMqtt(notification, payload);
+      } else {
+        self.notiToMqtt(notification, "");
+      }
     }
   }
   // END of NOTIFICATIONS to MQTT logic
