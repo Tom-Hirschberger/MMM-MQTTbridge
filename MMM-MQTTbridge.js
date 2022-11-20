@@ -9,6 +9,8 @@
 
 Module.register("MMM-MQTTbridge", {
   defaults: {
+    mqttDictConf: "./dict/mqttDictionary.js",
+    notiDictConf: "./dict/notiDictionary.js",
     mqttServer: "mqtt://:@localhost:1883",
     stringifyPayload: true,
     defaultRelay: false,
@@ -60,7 +62,9 @@ Module.register("MMM-MQTTbridge", {
     self.sendSocketNotification("CONFIG", self.config);
     self.loaded = false;
     self.mqttVal = "";
-    self.updateMqtt();
+    setTimeout(() => {
+      self.updateMqtt();
+    }, 500);
     self.cnotiHook = {}
     self.cnotiMqttCommands = {}
     self.cmqttHook = {}
@@ -120,11 +124,11 @@ Module.register("MMM-MQTTbridge", {
                 self.sendNotification(curCmdConf.notiID, curCmdConf.notiPayload)
                 this.sendSocketNotification("LOG","[MQTT bridge] MQTT -> NOTI issued: " + curCmdConf.notiID + ", payload: "+ JSON.stringify(curCmdConf.notiPayload));
               }
+            } else {
+              this.sendSocketNotification("LOG","[MQTT bridge] MQTT -> NOTI error: Skipping notification cause \"notiID\" is missing. "+JSON.stringify(curCmdConf));
             }
           }
         }
-      } else {
-        console.log("No match")
       }
     }
   },
@@ -192,6 +196,8 @@ Module.register("MMM-MQTTbridge", {
               }
 
               self.publishNotiToMqtt(curCmdConf.mqttTopic, msg, curOptions);
+            } else {
+              this.sendSocketNotification("LOG","[MQTT bridge] NOTI -> MQTT error: Skipping mqtt publish cause \"mqttTopic\" is missing. " + JSON.stringify(curCmdConf));
             }
           }
         }
