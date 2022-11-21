@@ -69,7 +69,7 @@ Module.register("MMM-MQTTbridge", {
       if (this.isAString(source)){
         return source === value
       } else {
-        return JSON.stringify(source).includes(value) === value
+        return JSON.stringify(source).includes(value)
       }
     } else if (type == "mt") {
       if (this.isAString(source)){
