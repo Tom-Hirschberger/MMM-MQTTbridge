@@ -86,3 +86,34 @@ Now we receive the message with the payload:
 
 As the value is greater than 12.2 nothing will happen.
 
+Let us assume we do have the following MQTT message configuration:
+
+```js
+    mqttPayload: [
+        {
+          conditions: [
+            {
+              type: "mt",
+              value: ".*test[2-4].*"
+            },
+          ],
+          mqttNotiCmd: ["Command 0"]
+        },
+    ],
+```
+
+Now we receive the message with the payload:
+
+```text
+mystringstart test123abc
+```
+
+Although the string has a sub string that starts with `test` nothing will happen cause only if `test` is followed by the digits `2`, `3` or `4` the string matches.
+
+Now we receive the message with the payload:
+
+```text
+myotherstringtest test24 and some more text
+```
+
+As the string `test` is followed by `2` the command `Command 0` is issued.
