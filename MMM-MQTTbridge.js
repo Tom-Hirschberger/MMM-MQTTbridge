@@ -59,7 +59,6 @@ Module.register("MMM-MQTTbridge", {
   },
 
   validateCondition: function(source, value, type){
-    this.sendSocketNotification("LOG","[MQTT bridge] Condition: Comparing \""+source+"\" to \""+value+"\".");
     if (type == "eq"){
       if ((typeof source === "number") || (this.isAString(source))){
         return source === value
