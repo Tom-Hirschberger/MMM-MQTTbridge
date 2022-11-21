@@ -218,61 +218,91 @@ Module.register("MMM-MQTTbridge", {
       //   payloadValue: true, 
       //   notiMqttCmd: ["SCREENON"]
       // },
+
+      //now we need to replace all new lines in the message if "newlineReplacement" is configured
+      //either in the global option or special in this configuration
+      let value = payload
+      if (typeof curHookConfig.valueFormat !== "undefined") {
+        let newlineReplacement = curHookConfig.newlineReplacement || self.config.newlineReplacement
+        if (newlineReplacement != null) {
+          value = String(value).replace(/(?:\r\n|\r|\n)/g, newlineReplacement)
+        }
+        value = eval(eval("`" + curHookConfig.valueFormat + "`"))
+      }
+
       if ( 
         (typeof curHookConfig.payloadValue === "undefined") ||
-        (JSON.stringify(curHookConfig.payloadValue) == JSON.stringify(payload))
+        (JSON.stringify(curHookConfig.payloadValue) == JSON.stringify(value))
       ){
-        let notiCmds = curHookConfig.notiMqttCmd || []
-        for(let curCmdIdx = 0; curCmdIdx < notiCmds.length; curCmdIdx++){
-          let curCmdConfigs = self.cnotiMqttCommands[notiCmds[curCmdIdx]]
-          for(let curCmdConfIdx = 0; curCmdConfIdx < curCmdConfigs.length; curCmdConfIdx++){
-            let curCmdConf = curCmdConfigs[curCmdConfIdx]
-            // {
-            //   commandId: "SCREENON",
-            //   mqttTopic: "magicmirror/state",
-            //   mqttMsgPayload: '{"state":"ON"}',
-            //   options: {"qos": 1, "retain": false},
-            //   retain: true,
-            //   qos: 0
-            // },
-            if (typeof curCmdConf.mqttTopic !== "undefined"){
-              let curStringifyPayload
-              if(typeof curCmdConf.stringifyPayload !== "undefined"){
-                curStringifyPayload = curCmdConf.stringifyPayload
-              } else {
-                curStringifyPayload = self.config.stringifyPayload
+        //if additional conditions are configured we will now check if all of them match
+        //only if all of them match further processing is done
+        let conditionsValid = true
+        if (typeof curHookConfig.conditions !== "undefined"){
+          for(let curCondIdx = 0; curCondIdx < curHookConfig.conditions.length; curCondIdx++){
+            let curCondition = curHookConfig.conditions[curCondIdx]
+            if((typeof curCondition["type"] !== "undefined") && (typeof curCondition["value"] !== "undefined")){
+              if(!self.validateCondition(value,curCondition["value"],curCondition["type"])){
+                conditionsValid = false
+                break
               }
-              let msg
-              if (typeof curCmdConf.mqttMsgPayload === "undefined") {
-                if(curStringifyPayload){
-                  msg = JSON.stringify(payload)
-                } else {
-                  msg = payload
-                }
-              } else {
-                if(curStringifyPayload){
-                  msg = JSON.stringify(curCmdConf.mqttMsgPayload)
-                } else {
-                  msg = curCmdConf.mqttMsgPayload
-                }
-              }
+            }
+          }
+        }
 
-              let curOptions = curCmdConf.options || {}
-              
-              if (typeof curCmdConf.retain !== "undefined"){
-                curOptions["retain"] = curCmdConf.retain
-              } else {
-                curOptions["retain"] = self.config.mqttConfig.retain
-              }
-              if (typeof curCmdConf.qos !== "undefined"){
-                curOptions["qos"] = curCmdConf.qos
-              } else {
-                curOptions["qos"] = self.config.mqttConfig.qos
-              }
+        //if all preconditions met we process the command configurations now
+        if(conditionsValid){
+          let notiCmds = curHookConfig.notiMqttCmd || []
+          for(let curCmdIdx = 0; curCmdIdx < notiCmds.length; curCmdIdx++){
+            let curCmdConfigs = self.cnotiMqttCommands[notiCmds[curCmdIdx]]
+            for(let curCmdConfIdx = 0; curCmdConfIdx < curCmdConfigs.length; curCmdConfIdx++){
+              let curCmdConf = curCmdConfigs[curCmdConfIdx]
+              // {
+              //   commandId: "SCREENON",
+              //   mqttTopic: "magicmirror/state",
+              //   mqttMsgPayload: '{"state":"ON"}',
+              //   options: {"qos": 1, "retain": false},
+              //   retain: true,
+              //   qos: 0
+              // },
+              if (typeof curCmdConf.mqttTopic !== "undefined"){
+                let curStringifyPayload
+                if(typeof curCmdConf.stringifyPayload !== "undefined"){
+                  curStringifyPayload = curCmdConf.stringifyPayload
+                } else {
+                  curStringifyPayload = self.config.stringifyPayload
+                }
+                let msg
+                if (typeof curCmdConf.mqttMsgPayload === "undefined") {
+                  if(curStringifyPayload){
+                    msg = JSON.stringify(value)
+                  } else {
+                    msg = value
+                  }
+                } else {
+                  if(curStringifyPayload){
+                    msg = JSON.stringify(curCmdConf.mqttMsgPayload)
+                  } else {
+                    msg = curCmdConf.mqttMsgPayload
+                  }
+                }
 
-              self.publishNotiToMqtt(curCmdConf.mqttTopic, msg, curOptions);
-            } else {
-              this.sendSocketNotification("LOG","[MQTT bridge] NOTI -> MQTT error: Skipping mqtt publish cause \"mqttTopic\" is missing. " + JSON.stringify(curCmdConf));
+                let curOptions = curCmdConf.options || {}
+                
+                if (typeof curCmdConf.retain !== "undefined"){
+                  curOptions["retain"] = curCmdConf.retain
+                } else {
+                  curOptions["retain"] = self.config.mqttConfig.retain
+                }
+                if (typeof curCmdConf.qos !== "undefined"){
+                  curOptions["qos"] = curCmdConf.qos
+                } else {
+                  curOptions["qos"] = self.config.mqttConfig.qos
+                }
+
+                self.publishNotiToMqtt(curCmdConf.mqttTopic, msg, curOptions);
+              } else {
+                this.sendSocketNotification("LOG","[MQTT bridge] NOTI -> MQTT error: Skipping mqtt publish cause \"mqttTopic\" is missing. " + JSON.stringify(curCmdConf));
+              }
             }
           }
         }
