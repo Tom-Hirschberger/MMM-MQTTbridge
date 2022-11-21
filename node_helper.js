@@ -29,6 +29,8 @@ module.exports = NodeHelper.create({
     self.converted.notiHook = {}
     self.converted.notiMqttCommands = {}
     self.converted.mqttHook = {}
+    self.converted.topicsWithJsonpath = {}
+    self.converted.notisWithJsonpath = {}
     self.converted.mqttNotiCommands = {}
   },
 
@@ -117,7 +119,12 @@ module.exports = NodeHelper.create({
     switch (notification) {
       case 'MQTT_BRIDGE_CONNECT': //case which appear at sturt-up.It sends pre-read arrays of custom dictionaries
         self.connectMqtt();
-        self.sendSocketNotification("DICTIONARIES", { "cnotiHook": self.converted.notiHook, "cmqttHook": self.converted.mqttHook, "cnotiMqttCommands": self.converted.notiMqttCommands, "cmqttNotiCommands": self.converted.mqttNotiCommands });
+        self.sendSocketNotification("DICTIONARIES", { "cnotiHook": self.converted.notiHook,
+                                                      "cmqttHook": self.converted.mqttHook,
+                                                      "cnotiMqttCommands": self.converted.notiMqttCommands,
+                                                      "cmqttNotiCommands": self.converted.mqttNotiCommands,
+                                                      "ctopicsWithJsonpath": self.converted.topicsWithJsonpath
+                                                    });
         break;
       case 'MQTT_MESSAGE_SEND': // if this message arrived, commands below send MQTT message using payload information
         var client = self.clients[payload.mqttServer];
@@ -178,6 +185,16 @@ module.exports = NodeHelper.create({
               let curArray = self.converted.mqttHook[curId] || []
               curArray = curArray.concat(self.mqttHook[idx].mqttPayload)
               self.converted.mqttHook[curId] = curArray
+
+              for (let curPayloadIdx = 0; curPayloadIdx < self.mqttHook[idx].mqttPayload.length; curPayloadIdx++){
+                let curPayloadObj = self.mqttHook[idx].mqttPayload[curPayloadIdx]
+                if(typeof curPayloadObj.jsonpath !== "undefined"){
+                  
+                  let curResultObj = self.converted.topicsWithJsonpath[curId] || {}
+                  curResultObj[curPayloadObj.jsonpath] = null
+                  self.converted.topicsWithJsonpath[curId] = curResultObj
+                }
+              }
             }
           }
       
