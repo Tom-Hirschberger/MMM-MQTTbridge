@@ -54,13 +54,30 @@ Module.register("MMM-MQTTbridge", {
     self.ctopicsWithJsonpath = {}
   },
 
+  isAString: function(x) {
+    return Object.prototype.toString.call(x) === "[object String]"
+  },
+
   validateCondition: function(source, value, type){
+    this.sendSocketNotification("LOG","[MQTT bridge] Condition: Comparing \""+source+"\" to \""+value+"\".");
     if (type == "eq"){
-      return source === value
+      if ((typeof source === "number") || (this.isAString(source))){
+        return source === value
+      } else {
+        return JSON.stringify(source) === value
+      }
     } else if (type == "incl"){
-      return source.includes(value)
+      if (this.isAString(source)){
+        return source === value
+      } else {
+        return JSON.stringify(source).includes(value) === value
+      }
     } else if (type == "mt") {
-      return new RegExp(value).test(source)
+      if (this.isAString(source)){
+        return new RegExp(value).test(source)
+      } else {
+        return new RegExp(value).test(JSON.stringify(source))
+      }
     } else if (type == "lt"){
       return source < value
     } else if (type == "le"){
@@ -103,12 +120,22 @@ Module.register("MMM-MQTTbridge", {
 
   publishNotiToMqtt: function(topic, payload, options = {}) {
     const self = this
-    self.sendSocketNotification("MQTT_MESSAGE_SEND", {
-      mqttServer: self.config.mqttServer,
-      topic: topic,
-      payload: payload,
-      options: options
-    });
+
+    if (self.isAString(payload)){
+      self.sendSocketNotification("MQTT_MESSAGE_SEND", {
+        mqttServer: self.config.mqttServer,
+        topic: topic,
+        payload: payload,
+        options: options
+      });
+    } else {
+      self.sendSocketNotification("MQTT_MESSAGE_SEND", {
+        mqttServer: self.config.mqttServer,
+        topic: topic,
+        payload: JSON.stringify(payload),
+        options: options
+      });
+    }
   },
 
   mqttToNoti: function (payload) {

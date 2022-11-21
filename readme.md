@@ -101,6 +101,7 @@ If you like to use a tls encrypted connection to your server you can use this ex
 - `stringifyPayload`- specify if the payload of notifications should be converted with "JSON.stringify" before it will be send as MQTT message (The setting can be overriden for each message seperatly in "notiDictionary.js"), default is true.
 - `mqttDictConf`- specify the path to the "mqttDictionary.js" file starting at the module folder, default: "./dict/mqttDictionary.js"
 - `notiDictConf`- specify the path to the "notiDictionary.js" file starting at the module folder, default: "./dict/notiDictionary.js"
+- `newlineReplacement`- if you use `valueFormat` for MQTT messages or for notification payloads you need to configure how new line characters should be replaced. See [valueFormat.md](valueFormat.md) for further details.
 - `notiConfig`- the notification configuration. See the "notiConfig part" section for details
 - `mqttConfig`- the mqtt configuration. See the "mqttConfig part" section for details
 
@@ -148,6 +149,10 @@ The way boolean values as payload of notifications are treated changed with vers
 
 As of version 2.0 of the module it is possible to specify `qos`, `retain` settings for each `notiMqttCommands` element. If present these settings override the default values of the general configuration.
 Additionally `options` can be specified which support all options for published messages of the MQTT.js library (see [MQTT.js](https://github.com/mqttjs/MQTT.js#readme) for details). If `qos` and `retain` are specified as single values and in the `options` the single values override the `options`.
+
+As of version 2.1 it is possible to format the payload of the notification with a `valueFormat` string before it will be compared to the `payloadValue` and will be further processed. Look at [valueFormat.md](valueFormat.md) for further details.
+
+As of version 2.1 it is possible to define complexer `conditions` than only compare the payload content to the `payloadValue`. Look at [conditions.md](conditions.md) for further details.
 
 ```js
 var notiHook = [
@@ -243,6 +248,12 @@ If `notiPayload` is present the value of `notiPayload` will be send as MQTT mess
 As of version 2.0 of the module it is possible to specify `qos` setting for each `mqttHook` element. If present these settings override the default values of the general configuration.
 Additionally `options` can be specified which support all options for subscribing to messages of the MQTT.js library (see [MQTT.js](https://github.com/mqttjs/MQTT.js#readme) for details). If `qos` is specified as single value and in the `options` the single value override the `options`.
 
+As of Version 2.1 it is possible to let the message value be parsed as JSON and select single or multiple values with [JSONPath-Plus](https://github.com/JSONPath-Plus/JSONPath) before the message gets further processed. Look at [jsonpath.md](jsonpath.md) for further details.
+
+As of version 2.1 it is possible to format the message or [JSONPath-Plus](https://github.com/JSONPath-Plus/JSONPath) result with a `valueFormat` string before it will be compared to the `payloadValue` and will be further processed. Look at [valueFormat.md](valueFormat.md) for further details.
+
+As of version 2.1 it is possible to define complexer `conditions` than only compare the messaage content to the `payloadValue`. Look at [conditions.md](conditions.md) for further details.
+
 ```js
 var mqttHook = [
     {
@@ -279,6 +290,26 @@ var mqttHook = [
         },
       ],
     },
+    {
+      mqttTopic: "myhome/testjson",
+      mqttPayload: [
+        {
+          jsonpath: "output"
+          valueFormat: "Number(${value}).toFixed(2)",
+          mqttNotiCmd: ["Command 3"]
+          conditions: [
+            {
+              type: "gt",
+              value: "10"
+            },
+            {
+              type: "lt",
+              value: "15"
+            }
+          ]
+        },
+      ],
+    },
   ];
 var mqttNotiCommands = [
     {
@@ -289,6 +320,10 @@ var mqttNotiCommands = [
     {
       commandId: "Command 2",
       notiID: "ASSISTANT_LISTEN",
+    },
+    {
+      commandId: "Command 3",
+      notiID: "PARSED_JSON_NOTIFICATION",
     },
   ];
   ```
