@@ -52,13 +52,17 @@ Module.register("MMM-MQTTbridge", {
     self.cmqttHook = {}
     self.cmqttNotiCommands = {}
     self.ctopicsWithJsonpath = {}
+    self.lastNotiValues = {}
+    self.lastMqttValues = {}
   },
 
   isAString: function(x) {
     return Object.prototype.toString.call(x) === "[object String]"
   },
 
-  validateCondition: function(source, value, type){
+  validateCondition: function(source, value, type, lastValue){
+    console.log("Checking "+type)
+    console.log(source+" "+value+" "+JSON.stringify(lastValue))
     if (type == "eq"){
       if ((typeof source === "number") || (this.isAString(source))){
         return source === value
@@ -85,6 +89,34 @@ Module.register("MMM-MQTTbridge", {
       return source > value
     } else if (type == "ge"){
       return source >= value
+    } else if (type == "time") {
+      if (lastValue != null) {
+        if ((Date.now() - lastValue[1]) > value){
+          return true
+        } else {
+          return false
+        }
+      } else {
+        return true
+      }
+    } else if (type == "tdiff") {
+      if (lastValue != null) {
+        if (JSON.stringify(source) != lastValue[0]){
+          return true
+        } else {
+          if (value > 0){
+            if ((Date.now() - lastValue[1]) > value){
+              return true
+            } else {
+              return false
+            }
+          } else {
+            return false
+          }
+        }
+      } else {
+        return true
+      }
     }
 
     return false
@@ -194,19 +226,22 @@ Module.register("MMM-MQTTbridge", {
         //only if all of them match further processing is done
         let conditionsValid = true
         if (typeof curHookConfig.conditions !== "undefined"){
+          let curLastValues = self.lastMqttValues[payload.topic] || null
           for(let curCondIdx = 0; curCondIdx < curHookConfig.conditions.length; curCondIdx++){
             let curCondition = curHookConfig.conditions[curCondIdx]
             if((typeof curCondition["type"] !== "undefined") && (typeof curCondition["value"] !== "undefined")){
-              if(!self.validateCondition(value,curCondition["value"],curCondition["type"])){
+              if(!self.validateCondition(value,curCondition["value"],curCondition["type"],curLastValues)){
                 conditionsValid = false
                 break
               }
+              console.log(conditionsValid)
             }
           }
         }
 
         //if all preconditions met we process the command configurations now
         if (conditionsValid){
+          self.lastMqttValues[payload.topic] = [JSON.stringify(value), Date.now()]
           let mqttCmds = curHookConfig.mqttNotiCmd || []
           for(let curCmdIdx = 0; curCmdIdx < mqttCmds.length; curCmdIdx++){
             let curCmdConfigs = self.cmqttNotiCommands[mqttCmds[curCmdIdx]]
@@ -264,12 +299,15 @@ Module.register("MMM-MQTTbridge", {
         //only if all of them match further processing is done
         let conditionsValid = true
         if (typeof curHookConfig.conditions !== "undefined"){
+          let curLastValues = self.lastNotiValues[notification] || null
           for(let curCondIdx = 0; curCondIdx < curHookConfig.conditions.length; curCondIdx++){
             let curCondition = curHookConfig.conditions[curCondIdx]
-            if((typeof curCondition["type"] !== "undefined") && (typeof curCondition["value"] !== "undefined")){
-              if(!self.validateCondition(value,curCondition["value"],curCondition["type"])){
-                conditionsValid = false
-                break
+            if(typeof curCondition["type"] !== "undefined"){
+              if (typeof curCondition["value"] !== "undefined") {
+                if(!self.validateCondition(value,curCondition["value"],curCondition["type"],curLastValues)){
+                  conditionsValid = false
+                  break
+                }
               }
             }
           }
@@ -277,6 +315,7 @@ Module.register("MMM-MQTTbridge", {
 
         //if all preconditions met we process the command configurations now
         if(conditionsValid){
+          self.lastNotiValues[notification] = [JSON.stringify(value),Date.now()]
           let notiCmds = curHookConfig.notiMqttCmd || []
           for(let curCmdIdx = 0; curCmdIdx < notiCmds.length; curCmdIdx++){
             let curCmdConfigs = self.cnotiMqttCommands[notiCmds[curCmdIdx]]
