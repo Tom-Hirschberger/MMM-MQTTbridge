@@ -32,6 +32,7 @@ Module.register("MMM-MQTTbridge", {
       rejectUnauthorized: true,
       listenMqtt: false,
       interval: 300000,
+      onConnectMessages: []
     },self.config.mqttConfig)
     
     self.config.notiConfig = Object.assign({
@@ -39,6 +40,7 @@ Module.register("MMM-MQTTbridge", {
       listenNoti: false,
       ignoreNotiId: [],
       ignoreNotiSender: [],
+      onConnectNotifications: []
     },self.config.notiConfig)
 
     self.sendSocketNotification("CONFIG", self.config);
@@ -393,6 +395,18 @@ Module.register("MMM-MQTTbridge", {
         self.cmqttNotiCommands = payload.cmqttNotiCommands;
         self.ctopicsWithJsonpath = payload.ctopicsWithJsonpath;
         break;
+      case "CONNECTED_AND_SUBSCRIBED":
+        for (let curMsg of self.config.mqttConfig.onConnectMessages){
+          self.publishNotiToMqtt(curMsg.topic, curMsg.msg, curMsg.options || {})
+        }
+        
+        for (let curNoti of self.config.notiConfig.onConnectNotifications){
+          if (typeof curNoti.payload !== "undefined"){
+            self.sendNotification(curNoti.notification, curNoti.payload)
+          } else {
+            self.sendNotification(curNoti.notification)
+          }
+        }
     }
   },
 

@@ -85,6 +85,8 @@ module.exports = NodeHelper.create({
               console.log("[MQTT bridge] Subscribed to the topic: " + self.mqttHook[i].mqttTopic +" with options: "+JSON.stringify(curOptions));
             }
           }
+
+          self.sendSocketNotification('CONNECTED_AND_SUBSCRIBED')
         })
 
         client.on('error', function (error) { //MQTT library function. Returns ERROR when connection to the broker could not be established.

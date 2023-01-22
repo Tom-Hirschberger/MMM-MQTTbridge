@@ -119,7 +119,43 @@ If you like to use a tls encrypted connection to your server you can use this ex
 - `clean` - should the connection be a clean one (look [mqtt-clean-sessions-example](http://www.steves-internet-guide.com/mqtt-clean-sessions-example/) for details), default: true
 - `will` - specify a object containing the "topic", "payload", etc. (see [MQTT.js](https://github.com/mqttjs/MQTT.js#readme) for details) you want the broker send to subscribing clients if the connection to this client is interrupted unexpected, default: unset
 - `options` - if you want to specify additional options for the connect you can add all of the MQTT-Lib supported ones this as this options object (see [MQTT.js](https://github.com/mqttjs/MQTT.js#readme) for details). If `clientId`, `clean` and `will` are specified both as single options and in this options object the single ones override the ones in the options object, default: unset
-- `interval` - interwal for MQTT status update (messages will be received all time independent of this setting), default is 300000ms.
+- `interval` - interval for MQTT status update (messages will be received all time independent of this setting), default is 300000ms.
+- `onConnectMessages` - a array of MQTT messages that should be send after the MQTT connected and subscribed to all topics successfully. While `topic` and `msg` setting are mandatory `options` are optional.
+
+onConnectMessages example:
+
+```json5
+{
+ module: 'MMM-MQTTbridge',
+ disabled: false,
+ config: {
+  mqttServer: "mqtts://:@localhost:8883",
+  mqttConfig:
+  {
+    listenMqtt: true,
+    interval: 300000,
+    mqttClientKey: "/home/pi/client-key.pem",
+    mqttClientCert: "/home/pi/client-cert.pem",
+    caCert: "/home/pi/ca-cert.pem",
+    rejectUnauthorized: true,
+    onConnectMessages: [
+      {
+        topic: "test1/connected",
+        msg: "true",
+        options: {
+          retain: false,
+          qos: 1
+        }
+      },
+      {
+        topic: "test2/get_status",
+        msg: {value: "test"}
+      }
+    ]
+  },
+ },
+},
+```
 
 #### notiConfig part
 
@@ -127,6 +163,35 @@ If you like to use a tls encrypted connection to your server you can use this ex
 - `ignoreNotiId` - list your NOTIFICATION ID that should be ignored from processing, this saves CPU usage. E.g. ["CLOCK_MINUTE", "NEWS_FEED"],
 - `ignoreNotiSender` - list your NOTIFICATION SENDERS that should be ignored from processing, this saves CPU usage. E.g. ["system", "NEWS_FEED"]
 - `qos` - specify the default QoS level for published MQTT messages (can be overriden for each message in "notiDictionary.js"), default: 0
+- `onConnectNotifications` - a array of notifications that are send after the MQTT client connected and subscribed to all topics successfully. While `notification` is mandatory `payload` is optional.
+
+onConnectNotifications example:
+
+```json5
+{
+ module: 'MMM-MQTTbridge',
+ disabled: false,
+ config: {
+  mqttServer: "mqtts://:@localhost:8883",
+  notiConfig:
+  {
+    listenNoti: true,
+    ignoreNotiId: ["CLOCK_MINUTE", "NEWS_FEED"],
+    ignoreNotiSender: ["system", "NEWS_FEED"],
+    onConnectNotifications: [
+      {
+        notification: "TEST1",
+        payload: true
+      },
+      {
+        notification: "TEST2",
+        payload: {value: "myvalue"}
+      }
+    ]
+  },
+ },
+},
+```
 
 ### NOTIFICATIONS to MQTT DICTIONARY SECTION
 
