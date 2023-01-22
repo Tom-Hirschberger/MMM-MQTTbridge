@@ -62,8 +62,6 @@ Module.register("MMM-MQTTbridge", {
   },
 
   validateCondition: function(source, value, type, lastValue){
-    console.log("Checking "+type)
-    console.log(source+" "+value+" "+JSON.stringify(lastValue))
     if (type == "eq"){
       if ((typeof source === "number") || (this.isAString(source))){
         return source === value
@@ -235,7 +233,6 @@ Module.register("MMM-MQTTbridge", {
                 conditionsValid = false
                 break
               }
-              console.log(conditionsValid)
             }
           }
         }
@@ -394,11 +391,11 @@ Module.register("MMM-MQTTbridge", {
         self.cmqttNotiCommands = payload.cmqttNotiCommands;
         self.ctopicsWithJsonpath = payload.ctopicsWithJsonpath;
 
-        for (let curNotification of self.cnotiHook) {
+        for (let curNotification in self.cnotiHook) {
           self.lastNotiValues[curNotification] = {};
         }
 
-        for (let curTopic of self.cmqttHook) {
+        for (let curTopic in self.cmqttHook) {
           self.lastMqttValues[curTopic] = {};
         }
         break;
