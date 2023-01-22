@@ -1,5 +1,4 @@
 /* eslint-disable indent */
-"use strict";
 /* global Module */
 
 /* Magic Mirror
@@ -228,7 +227,7 @@ Module.register("MMM-MQTTbridge", {
         //only if all of them match further processing is done
         let conditionsValid = true
         if (typeof curHookConfig.conditions !== "undefined"){
-          let curLastValues = self.lastMqttValues[payload.topic] || null
+          let curLastValues = self.lastMqttValues[payload.topic][curHookIdx] || null
           for(let curCondIdx = 0; curCondIdx < curHookConfig.conditions.length; curCondIdx++){
             let curCondition = curHookConfig.conditions[curCondIdx]
             if((typeof curCondition["type"] !== "undefined") && (typeof curCondition["value"] !== "undefined")){
@@ -243,7 +242,7 @@ Module.register("MMM-MQTTbridge", {
 
         //if all preconditions met we process the command configurations now
         if (conditionsValid){
-          self.lastMqttValues[payload.topic] = [JSON.stringify(value), Date.now()]
+          self.lastMqttValues[payload.topic][curHookIdx] = [JSON.stringify(value), Date.now()]
           let mqttCmds = curHookConfig.mqttNotiCmd || []
           for(let curCmdIdx = 0; curCmdIdx < mqttCmds.length; curCmdIdx++){
             let curCmdConfigs = self.cmqttNotiCommands[mqttCmds[curCmdIdx]]
@@ -301,7 +300,7 @@ Module.register("MMM-MQTTbridge", {
         //only if all of them match further processing is done
         let conditionsValid = true
         if (typeof curHookConfig.conditions !== "undefined"){
-          let curLastValues = self.lastNotiValues[notification] || null
+          let curLastValues = self.lastNotiValues[notification][curHookIdx] || null
           for(let curCondIdx = 0; curCondIdx < curHookConfig.conditions.length; curCondIdx++){
             let curCondition = curHookConfig.conditions[curCondIdx]
             if(typeof curCondition["type"] !== "undefined"){
@@ -317,7 +316,7 @@ Module.register("MMM-MQTTbridge", {
 
         //if all preconditions met we process the command configurations now
         if(conditionsValid){
-          self.lastNotiValues[notification] = [JSON.stringify(value),Date.now()]
+          self.lastNotiValues[notification][curHookIdx] = [JSON.stringify(value),Date.now()]
           let notiCmds = curHookConfig.notiMqttCmd || []
           for(let curCmdIdx = 0; curCmdIdx < notiCmds.length; curCmdIdx++){
             let curCmdConfigs = self.cnotiMqttCommands[notiCmds[curCmdIdx]]
@@ -394,6 +393,14 @@ Module.register("MMM-MQTTbridge", {
         self.cmqttHook = payload.cmqttHook;
         self.cmqttNotiCommands = payload.cmqttNotiCommands;
         self.ctopicsWithJsonpath = payload.ctopicsWithJsonpath;
+
+        for (let curNotification of self.cnotiHook) {
+          self.lastNotiValues[curNotification] = {};
+        }
+
+        for (let curTopic of self.cmqttHook) {
+          self.lastMqttValues[curTopic] = {};
+        }
         break;
       case "CONNECTED_AND_SUBSCRIBED":
         for (let curMsg of self.config.mqttConfig.onConnectMessages){
