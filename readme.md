@@ -267,7 +267,7 @@ var notiMqttCommands = [
   {
     commandId: "Command 2",
     mqttTopic: "myhome/kitchen/temperature",
-    mqttMsgPayload: ''
+    mqttMsgPayload: '',
     options: {
       retain: true,
       qos: 1
@@ -361,7 +361,7 @@ var mqttHook = [
         {
           jsonpath: "output"
           valueFormat: "Number(${value}).toFixed(2)",
-          mqttNotiCmd: ["Command 3"]
+          mqttNotiCmd: ["Command 3"],
           conditions: [
             {
               type: "gt",
