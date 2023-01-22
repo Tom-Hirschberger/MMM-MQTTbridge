@@ -1,5 +1,4 @@
 /* eslint-disable indent */
-"use strict";
 /* global Module */
 
 /* Magic Mirror
@@ -32,6 +31,7 @@ Module.register("MMM-MQTTbridge", {
       rejectUnauthorized: true,
       listenMqtt: false,
       interval: 300000,
+      onConnectMessages: []
     },self.config.mqttConfig)
     
     self.config.notiConfig = Object.assign({
@@ -39,6 +39,7 @@ Module.register("MMM-MQTTbridge", {
       listenNoti: false,
       ignoreNotiId: [],
       ignoreNotiSender: [],
+      onConnectNotifications: []
     },self.config.notiConfig)
 
     self.sendSocketNotification("CONFIG", self.config);
@@ -52,13 +53,15 @@ Module.register("MMM-MQTTbridge", {
     self.cmqttHook = {}
     self.cmqttNotiCommands = {}
     self.ctopicsWithJsonpath = {}
+    self.lastNotiValues = {}
+    self.lastMqttValues = {}
   },
 
   isAString: function(x) {
     return Object.prototype.toString.call(x) === "[object String]"
   },
 
-  validateCondition: function(source, value, type){
+  validateCondition: function(source, value, type, lastValue){
     if (type == "eq"){
       if ((typeof source === "number") || (this.isAString(source))){
         return source === value
@@ -69,7 +72,7 @@ Module.register("MMM-MQTTbridge", {
       if (this.isAString(source)){
         return source === value
       } else {
-        return JSON.stringify(source).includes(value) === value
+        return JSON.stringify(source).includes(value)
       }
     } else if (type == "mt") {
       if (this.isAString(source)){
@@ -85,6 +88,34 @@ Module.register("MMM-MQTTbridge", {
       return source > value
     } else if (type == "ge"){
       return source >= value
+    } else if (type == "time") {
+      if (lastValue != null) {
+        if ((Date.now() - lastValue[1]) > value){
+          return true
+        } else {
+          return false
+        }
+      } else {
+        return true
+      }
+    } else if (type == "tdiff") {
+      if (lastValue != null) {
+        if (JSON.stringify(source) != lastValue[0]){
+          return true
+        } else {
+          if (value > 0){
+            if ((Date.now() - lastValue[1]) > value){
+              return true
+            } else {
+              return false
+            }
+          } else {
+            return false
+          }
+        }
+      } else {
+        return true
+      }
     }
 
     return false
@@ -194,10 +225,11 @@ Module.register("MMM-MQTTbridge", {
         //only if all of them match further processing is done
         let conditionsValid = true
         if (typeof curHookConfig.conditions !== "undefined"){
+          let curLastValues = self.lastMqttValues[payload.topic][curHookIdx] || null
           for(let curCondIdx = 0; curCondIdx < curHookConfig.conditions.length; curCondIdx++){
             let curCondition = curHookConfig.conditions[curCondIdx]
             if((typeof curCondition["type"] !== "undefined") && (typeof curCondition["value"] !== "undefined")){
-              if(!self.validateCondition(value,curCondition["value"],curCondition["type"])){
+              if(!self.validateCondition(value,curCondition["value"],curCondition["type"],curLastValues)){
                 conditionsValid = false
                 break
               }
@@ -207,6 +239,7 @@ Module.register("MMM-MQTTbridge", {
 
         //if all preconditions met we process the command configurations now
         if (conditionsValid){
+          self.lastMqttValues[payload.topic][curHookIdx] = [JSON.stringify(value), Date.now()]
           let mqttCmds = curHookConfig.mqttNotiCmd || []
           for(let curCmdIdx = 0; curCmdIdx < mqttCmds.length; curCmdIdx++){
             let curCmdConfigs = self.cmqttNotiCommands[mqttCmds[curCmdIdx]]
@@ -264,12 +297,15 @@ Module.register("MMM-MQTTbridge", {
         //only if all of them match further processing is done
         let conditionsValid = true
         if (typeof curHookConfig.conditions !== "undefined"){
+          let curLastValues = self.lastNotiValues[notification][curHookIdx] || null
           for(let curCondIdx = 0; curCondIdx < curHookConfig.conditions.length; curCondIdx++){
             let curCondition = curHookConfig.conditions[curCondIdx]
-            if((typeof curCondition["type"] !== "undefined") && (typeof curCondition["value"] !== "undefined")){
-              if(!self.validateCondition(value,curCondition["value"],curCondition["type"])){
-                conditionsValid = false
-                break
+            if(typeof curCondition["type"] !== "undefined"){
+              if (typeof curCondition["value"] !== "undefined") {
+                if(!self.validateCondition(value,curCondition["value"],curCondition["type"],curLastValues)){
+                  conditionsValid = false
+                  break
+                }
               }
             }
           }
@@ -277,6 +313,7 @@ Module.register("MMM-MQTTbridge", {
 
         //if all preconditions met we process the command configurations now
         if(conditionsValid){
+          self.lastNotiValues[notification][curHookIdx] = [JSON.stringify(value),Date.now()]
           let notiCmds = curHookConfig.notiMqttCmd || []
           for(let curCmdIdx = 0; curCmdIdx < notiCmds.length; curCmdIdx++){
             let curCmdConfigs = self.cnotiMqttCommands[notiCmds[curCmdIdx]]
@@ -353,7 +390,27 @@ Module.register("MMM-MQTTbridge", {
         self.cmqttHook = payload.cmqttHook;
         self.cmqttNotiCommands = payload.cmqttNotiCommands;
         self.ctopicsWithJsonpath = payload.ctopicsWithJsonpath;
+
+        for (let curNotification in self.cnotiHook) {
+          self.lastNotiValues[curNotification] = {};
+        }
+
+        for (let curTopic in self.cmqttHook) {
+          self.lastMqttValues[curTopic] = {};
+        }
         break;
+      case "CONNECTED_AND_SUBSCRIBED":
+        for (let curMsg of self.config.mqttConfig.onConnectMessages){
+          self.publishNotiToMqtt(curMsg.topic, curMsg.msg, curMsg.options || {})
+        }
+        
+        for (let curNoti of self.config.notiConfig.onConnectNotifications){
+          if (typeof curNoti.payload !== "undefined"){
+            self.sendNotification(curNoti.notification, curNoti.payload)
+          } else {
+            self.sendNotification(curNoti.notification)
+          }
+        }
     }
   },
 
