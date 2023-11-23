@@ -1,7 +1,7 @@
 /* eslint-disable indent */
 /* global Module */
 
-/* Magic Mirror
+/* MagicMirror²
  * Module: MMM-MQTTbridge
  * MIT Licensed.
  */
