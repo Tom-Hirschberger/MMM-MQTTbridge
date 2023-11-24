@@ -1,7 +1,7 @@
 /* eslint-disable indent */
 'use strict';
 
-/* Magic Mirror
+/* MagicMirror²
  * Module: MMM-MQTTbridge
  * MIT Licensed.
  */
@@ -90,12 +90,12 @@ module.exports = NodeHelper.create({
         })
 
         client.on('error', function (error) { //MQTT library function. Returns ERROR when connection to the broker could not be established.
-          console.log("[MQTT bridge] MQTT brocker error: " + error);
+          console.log("[MQTT bridge] MQTT broker error: " + error);
           self.sendSocketNotification('ERROR', { type: 'notification', title: '[MMM-MQTTbridge]', message: 'MQTT broker rised the following error: ' + error });
         });
 
         client.on('offline', function () { //MQTT library function. Returns OFFLINE when the client (our code) is not connected.
-          console.log("[MQTT bridge] Could not establish connection to MQTT brocker");
+          console.log("[MQTT bridge] Could not establish connection to MQTT broker");
           self.sendSocketNotification('ERROR', { type: 'notification', title: '[MMM-MQTTbridge]', message: "MQTT broker can't be reached" });
           client.end();
         });
