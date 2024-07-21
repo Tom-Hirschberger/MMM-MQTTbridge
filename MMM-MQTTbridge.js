@@ -8,6 +8,7 @@
 
 Module.register("MMM-MQTTbridge", {
   defaults: {
+    debug: false,
     mqttDictConf: "./dict/mqttDictionary.js",
     notiDictConf: "./dict/notiDictionary.js",
     mqttServer: "mqtt://:@localhost:1883",
@@ -173,93 +174,100 @@ Module.register("MMM-MQTTbridge", {
     let msg = payload.data
     let curMqttHook = self.cmqttHook[payload.topic]
 
-    //if there are configured jsonpath settings for this topic we create the json object and the jsonpath values
-    //this way they only get calculated once even if they are used by more than one element
-    if (typeof self.ctopicsWithJsonpath[payload.topic] !== "undefined"){
-      let jsonObj = self.tryParseJSONObject(msg)
-      if (jsonObj != false){
-        for(let curPath in self.ctopicsWithJsonpath[payload.topic]){
-          let value  = JSONPath.JSONPath({ path: curPath, json: jsonObj });
-          if(Array.isArray(value) && (value.length == 1)){
-            value = value[0]
+    if (typeof curMqttHook !== "undefined"){
+
+      //if there are configured jsonpath settings for this topic we create the json object and the jsonpath values
+      //this way they only get calculated once even if they are used by more than one element
+      if (typeof self.ctopicsWithJsonpath[payload.topic] !== "undefined"){
+        let jsonObj = self.tryParseJSONObject(msg)
+        if (jsonObj != false){
+          for(let curPath in self.ctopicsWithJsonpath[payload.topic]){
+            let value  = JSONPath.JSONPath({ path: curPath, json: jsonObj });
+            if(Array.isArray(value) && (value.length == 1)){
+              value = value[0]
+            }
+
+            self.ctopicsWithJsonpath[payload.topic][curPath] = value
           }
-
-          self.ctopicsWithJsonpath[payload.topic][curPath] = value
-        }
-      }
-    }
-
-    for(let curHookIdx=0; curHookIdx < curMqttHook.length; curHookIdx++){
-      let curHookConfig = curMqttHook[curHookIdx]
-      // {
-      //   payloadValue: '{"state": "ON"}',
-      //   mqttNotiCmd: ["Command 1"]
-      // },
-      let value = msg
-      //if a jsonpath is configured in commad configuration we use the pre-calculated value now
-      //if the message was not a valid JSON we still use the raw value and write a message to the log instead
-      if(typeof curHookConfig.jsonpath !== "undefined") {
-        value = self.ctopicsWithJsonpath[payload.topic][curHookConfig.jsonpath]
-        if(value == null){
-          this.sendSocketNotification("LOG","[MQTT bridge] Invalid JSON: There is configured a jsonpath setting for topic "+payload.topic + " but the message: "+msg+" is not a valid JSON. Using original value instead!");
-          value = msg
         }
       }
 
-      //now we need to replace all new lines in the message if "newlineReplacement" is configured
-      //either in the global option or special in this configuration
-      if (typeof curHookConfig.valueFormat !== "undefined") {
-        let newlineReplacement = curHookConfig.newlineReplacement || self.config.newlineReplacement
-        if (newlineReplacement != null) {
-          value = String(value).replace(/(?:\r\n|\r|\n)/g, newlineReplacement)
+      for(let curHookIdx=0; curHookIdx < curMqttHook.length; curHookIdx++){
+        let curHookConfig = curMqttHook[curHookIdx]
+        // {
+        //   payloadValue: '{"state": "ON"}',
+        //   mqttNotiCmd: ["Command 1"]
+        // },
+        let value = msg
+        //if a jsonpath is configured in commad configuration we use the pre-calculated value now
+        //if the message was not a valid JSON we still use the raw value and write a message to the log instead
+        if(typeof curHookConfig.jsonpath !== "undefined") {
+          value = self.ctopicsWithJsonpath[payload.topic][curHookConfig.jsonpath]
+          if(value == null){
+            this.sendSocketNotification("LOG","[MQTT bridge] Invalid JSON: There is configured a jsonpath setting for topic "+payload.topic + " but the message: "+msg+" is not a valid JSON. Using original value instead!");
+            value = msg
+          }
         }
-        value = eval(eval("`" + curHookConfig.valueFormat + "`"))
-      }
 
-      //now that we have the parsed and replaced value we can check if the payloadValue is matched (if payloadValue is present)
-      if ( 
-        (typeof curHookConfig.payloadValue === "undefined") ||
-        (curHookConfig.payloadValue == value)
-      ){
-        //if additional conditions are configured we will now check if all of them match
-        //only if all of them match further processing is done
-        let conditionsValid = true
-        if (typeof curHookConfig.conditions !== "undefined"){
-          let curLastValues = self.lastMqttValues[payload.topic][curHookIdx] || null
-          for(let curCondIdx = 0; curCondIdx < curHookConfig.conditions.length; curCondIdx++){
-            let curCondition = curHookConfig.conditions[curCondIdx]
-            if((typeof curCondition["type"] !== "undefined") && (typeof curCondition["value"] !== "undefined")){
-              if(!self.validateCondition(value,curCondition["value"],curCondition["type"],curLastValues)){
-                conditionsValid = false
-                break
+        //now we need to replace all new lines in the message if "newlineReplacement" is configured
+        //either in the global option or special in this configuration
+        if (typeof curHookConfig.valueFormat !== "undefined") {
+          let newlineReplacement = curHookConfig.newlineReplacement || self.config.newlineReplacement
+          if (newlineReplacement != null) {
+            value = String(value).replace(/(?:\r\n|\r|\n)/g, newlineReplacement)
+          }
+          value = eval(eval("`" + curHookConfig.valueFormat + "`"))
+        }
+
+        //now that we have the parsed and replaced value we can check if the payloadValue is matched (if payloadValue is present)
+        if ( 
+          (typeof curHookConfig.payloadValue === "undefined") ||
+          (curHookConfig.payloadValue == value)
+        ){
+          //if additional conditions are configured we will now check if all of them match
+          //only if all of them match further processing is done
+          let conditionsValid = true
+          if (typeof curHookConfig.conditions !== "undefined"){
+            let curLastValues = self.lastMqttValues[payload.topic][curHookIdx] || null
+            for(let curCondIdx = 0; curCondIdx < curHookConfig.conditions.length; curCondIdx++){
+              let curCondition = curHookConfig.conditions[curCondIdx]
+              if((typeof curCondition["type"] !== "undefined") && (typeof curCondition["value"] !== "undefined")){
+                if(!self.validateCondition(value,curCondition["value"],curCondition["type"],curLastValues)){
+                  conditionsValid = false
+                  break
+                }
               }
             }
           }
-        }
 
-        //if all preconditions met we process the command configurations now
-        if (conditionsValid){
-          self.lastMqttValues[payload.topic][curHookIdx] = [JSON.stringify(value), Date.now()]
-          let mqttCmds = curHookConfig.mqttNotiCmd || []
-          for(let curCmdIdx = 0; curCmdIdx < mqttCmds.length; curCmdIdx++){
-            let curCmdConfigs = self.cmqttNotiCommands[mqttCmds[curCmdIdx]]
-            for(let curCmdConfIdx = 0; curCmdConfIdx < curCmdConfigs.length; curCmdConfIdx++){
-              let curCmdConf = curCmdConfigs[curCmdConfIdx]
-              // {
-              //   commandId: "Command 1",
-              //   notiID: "REMOTE_ACTION",
-              //   notiPayload: {action: 'MONITORON'}
-              // },
-              if (typeof curCmdConf.notiID !== "undefined"){
-                if (typeof curCmdConf.notiPayload === "undefined") {
-                  self.sendNotification(curCmdConf.notiID, value)
-                  this.sendSocketNotification("LOG","[MQTT bridge] MQTT -> NOTI issued: " + curCmdConf.notiID + ", payload: "+ value);
+          //if all preconditions met we process the command configurations now
+          if (conditionsValid){
+            self.lastMqttValues[payload.topic][curHookIdx] = [JSON.stringify(value), Date.now()]
+            let mqttCmds = curHookConfig.mqttNotiCmd || []
+            for(let curCmdIdx = 0; curCmdIdx < mqttCmds.length; curCmdIdx++){
+              let curCmdConfigs = self.cmqttNotiCommands[mqttCmds[curCmdIdx]]
+              for(let curCmdConfIdx = 0; curCmdConfIdx < curCmdConfigs.length; curCmdConfIdx++){
+                let curCmdConf = curCmdConfigs[curCmdConfIdx]
+                // {
+                //   commandId: "Command 1",
+                //   notiID: "REMOTE_ACTION",
+                //   notiPayload: {action: 'MONITORON'}
+                // },
+                if (typeof curCmdConf.notiID !== "undefined"){
+                  if (typeof curCmdConf.notiPayload === "undefined") {
+                    self.sendNotification(curCmdConf.notiID, value)
+        if (self.config.debug){
+                      this.sendSocketNotification("LOG","[MQTT bridge] MQTT -> NOTI issued: " + curCmdConf.notiID + ", payload: "+ value);
+        }
+                  } else {
+                    self.sendNotification(curCmdConf.notiID, curCmdConf.notiPayload)
+        if (self.config.debug){
+                      this.sendSocketNotification("LOG","[MQTT bridge] MQTT -> NOTI issued: " + curCmdConf.notiID + ", payload: "+ JSON.stringify(curCmdConf.notiPayload));
+              }
+                  }
                 } else {
-                  self.sendNotification(curCmdConf.notiID, curCmdConf.notiPayload)
-                  this.sendSocketNotification("LOG","[MQTT bridge] MQTT -> NOTI issued: " + curCmdConf.notiID + ", payload: "+ JSON.stringify(curCmdConf.notiPayload));
+                  this.sendSocketNotification("LOG","[MQTT bridge] MQTT -> NOTI error: Skipping notification cause \"notiID\" is missing. "+JSON.stringify(curCmdConf));
                 }
-              } else {
-                this.sendSocketNotification("LOG","[MQTT bridge] MQTT -> NOTI error: Skipping notification cause \"notiID\" is missing. "+JSON.stringify(curCmdConf));
               }
             }
           }
@@ -271,100 +279,102 @@ Module.register("MMM-MQTTbridge", {
   notiToMqtt: function(notification, payload) {
     const self = this
     let curNotiHooks = self.cnotiHook[notification]
-    for(let curHookIdx = 0; curHookIdx < curNotiHooks.length; curHookIdx++){
-      let curHookConfig = curNotiHooks[curHookIdx]
-      // {
-      //   payloadValue: true, 
-      //   notiMqttCmd: ["SCREENON"]
-      // },
+    if (typeof curNotiHooks !== "undefined"){
+      for(let curHookIdx = 0; curHookIdx < curNotiHooks.length; curHookIdx++){
+        let curHookConfig = curNotiHooks[curHookIdx]
+        // {
+        //   payloadValue: true, 
+        //   notiMqttCmd: ["SCREENON"]
+        // },
 
-      //now we need to replace all new lines in the message if "newlineReplacement" is configured
-      //either in the global option or special in this configuration
-      let value = payload
-      if (typeof curHookConfig.valueFormat !== "undefined") {
-        let newlineReplacement = curHookConfig.newlineReplacement || self.config.newlineReplacement
-        if (newlineReplacement != null) {
-          value = String(value).replace(/(?:\r\n|\r|\n)/g, newlineReplacement)
+        //now we need to replace all new lines in the message if "newlineReplacement" is configured
+        //either in the global option or special in this configuration
+        let value = payload
+        if (typeof curHookConfig.valueFormat !== "undefined") {
+          let newlineReplacement = curHookConfig.newlineReplacement || self.config.newlineReplacement
+          if (newlineReplacement != null) {
+            value = String(value).replace(/(?:\r\n|\r|\n)/g, newlineReplacement)
+          }
+          value = eval(eval("`" + curHookConfig.valueFormat + "`"))
         }
-        value = eval(eval("`" + curHookConfig.valueFormat + "`"))
-      }
 
-      if ( 
-        (typeof curHookConfig.payloadValue === "undefined") ||
-        (JSON.stringify(curHookConfig.payloadValue) == JSON.stringify(value))
-      ){
-        //if additional conditions are configured we will now check if all of them match
-        //only if all of them match further processing is done
-        let conditionsValid = true
-        if (typeof curHookConfig.conditions !== "undefined"){
-          let curLastValues = self.lastNotiValues[notification][curHookIdx] || null
-          for(let curCondIdx = 0; curCondIdx < curHookConfig.conditions.length; curCondIdx++){
-            let curCondition = curHookConfig.conditions[curCondIdx]
-            if(typeof curCondition["type"] !== "undefined"){
-              if (typeof curCondition["value"] !== "undefined") {
-                if(!self.validateCondition(value,curCondition["value"],curCondition["type"],curLastValues)){
-                  conditionsValid = false
-                  break
+        if ( 
+          (typeof curHookConfig.payloadValue === "undefined") ||
+          (JSON.stringify(curHookConfig.payloadValue) == JSON.stringify(value))
+        ){
+          //if additional conditions are configured we will now check if all of them match
+          //only if all of them match further processing is done
+          let conditionsValid = true
+          if (typeof curHookConfig.conditions !== "undefined"){
+            let curLastValues = self.lastNotiValues[notification][curHookIdx] || null
+            for(let curCondIdx = 0; curCondIdx < curHookConfig.conditions.length; curCondIdx++){
+              let curCondition = curHookConfig.conditions[curCondIdx]
+              if(typeof curCondition["type"] !== "undefined"){
+                if (typeof curCondition["value"] !== "undefined") {
+                  if(!self.validateCondition(value,curCondition["value"],curCondition["type"],curLastValues)){
+                    conditionsValid = false
+                    break
+                  }
                 }
               }
             }
           }
-        }
 
-        //if all preconditions met we process the command configurations now
-        if(conditionsValid){
-          self.lastNotiValues[notification][curHookIdx] = [JSON.stringify(value),Date.now()]
-          let notiCmds = curHookConfig.notiMqttCmd || []
-          for(let curCmdIdx = 0; curCmdIdx < notiCmds.length; curCmdIdx++){
-            let curCmdConfigs = self.cnotiMqttCommands[notiCmds[curCmdIdx]]
-            for(let curCmdConfIdx = 0; curCmdConfIdx < curCmdConfigs.length; curCmdConfIdx++){
-              let curCmdConf = curCmdConfigs[curCmdConfIdx]
-              // {
-              //   commandId: "SCREENON",
-              //   mqttTopic: "magicmirror/state",
-              //   mqttMsgPayload: '{"state":"ON"}',
-              //   options: {"qos": 1, "retain": false},
-              //   retain: true,
-              //   qos: 0
-              // },
-              if (typeof curCmdConf.mqttTopic !== "undefined"){
-                let curStringifyPayload
-                if(typeof curCmdConf.stringifyPayload !== "undefined"){
-                  curStringifyPayload = curCmdConf.stringifyPayload
-                } else {
-                  curStringifyPayload = self.config.stringifyPayload
-                }
-                let msg
-                if (typeof curCmdConf.mqttMsgPayload === "undefined") {
-                  if(curStringifyPayload){
-                    msg = JSON.stringify(value)
+          //if all preconditions met we process the command configurations now
+          if(conditionsValid){
+            self.lastNotiValues[notification][curHookIdx] = [JSON.stringify(value),Date.now()]
+            let notiCmds = curHookConfig.notiMqttCmd || []
+            for(let curCmdIdx = 0; curCmdIdx < notiCmds.length; curCmdIdx++){
+              let curCmdConfigs = self.cnotiMqttCommands[notiCmds[curCmdIdx]] || []
+              for(let curCmdConfIdx = 0; curCmdConfIdx < curCmdConfigs.length; curCmdConfIdx++){
+                let curCmdConf = curCmdConfigs[curCmdConfIdx]
+                // {
+                //   commandId: "SCREENON",
+                //   mqttTopic: "magicmirror/state",
+                //   mqttMsgPayload: '{"state":"ON"}',
+                //   options: {"qos": 1, "retain": false},
+                //   retain: true,
+                //   qos: 0
+                // },
+                if (typeof curCmdConf.mqttTopic !== "undefined"){
+                  let curStringifyPayload
+                  if(typeof curCmdConf.stringifyPayload !== "undefined"){
+                    curStringifyPayload = curCmdConf.stringifyPayload
                   } else {
-                    msg = value
+                    curStringifyPayload = self.config.stringifyPayload
                   }
-                } else {
-                  if(curStringifyPayload){
-                    msg = JSON.stringify(curCmdConf.mqttMsgPayload)
+                  let msg
+                  if (typeof curCmdConf.mqttMsgPayload === "undefined") {
+                    if(curStringifyPayload){
+                      msg = JSON.stringify(value)
+                    } else {
+                      msg = value
+                    }
                   } else {
-                    msg = curCmdConf.mqttMsgPayload
+                    if(curStringifyPayload){
+                      msg = JSON.stringify(curCmdConf.mqttMsgPayload)
+                    } else {
+                      msg = curCmdConf.mqttMsgPayload
+                    }
                   }
-                }
 
-                let curOptions = curCmdConf.options || {}
-                
-                if (typeof curCmdConf.retain !== "undefined"){
-                  curOptions["retain"] = curCmdConf.retain
-                } else {
-                  curOptions["retain"] = self.config.mqttConfig.retain
-                }
-                if (typeof curCmdConf.qos !== "undefined"){
-                  curOptions["qos"] = curCmdConf.qos
-                } else {
-                  curOptions["qos"] = self.config.mqttConfig.qos
-                }
+                  let curOptions = curCmdConf.options || {}
+                  
+                  if (typeof curCmdConf.retain !== "undefined"){
+                    curOptions["retain"] = curCmdConf.retain
+                  } else {
+                    curOptions["retain"] = self.config.mqttConfig.retain
+                  }
+                  if (typeof curCmdConf.qos !== "undefined"){
+                    curOptions["qos"] = curCmdConf.qos
+                  } else {
+                    curOptions["qos"] = self.config.mqttConfig.qos
+                  }
 
-                self.publishNotiToMqtt(curCmdConf.mqttTopic, msg, curOptions);
-              } else {
-                this.sendSocketNotification("LOG","[MQTT bridge] NOTI -> MQTT error: Skipping mqtt publish cause \"mqttTopic\" is missing. " + JSON.stringify(curCmdConf));
+                  self.publishNotiToMqtt(curCmdConf.mqttTopic, msg, curOptions);
+                } else {
+                  this.sendSocketNotification("LOG","[MQTT bridge] NOTI -> MQTT error: Skipping mqtt publish cause \"mqttTopic\" is missing. " + JSON.stringify(curCmdConf));
+                }
               }
             }
           }
