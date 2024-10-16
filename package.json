@@ -21,7 +21,7 @@
   },
   "homepage": "https://github.com/sergge1/MMM-MQTTbridge#readme",
   "dependencies": {
-    "mqtt": "4.3.7",
-    "jsonpath-plus": "10.0.0"
+    "mqtt": "5.10.1",
+    "jsonpath-plus": "10.0.1"
   }
 }
