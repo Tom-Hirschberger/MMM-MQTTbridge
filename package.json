@@ -1,6 +1,6 @@
 {
   "name": "MMM-MQTTbridge",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "description": "NOTIFICATION <-> MQTT module for MagicMirror",
   "main": "index.js",
   "scripts": {
@@ -21,7 +21,7 @@
   },
   "homepage": "https://github.com/sergge1/MMM-MQTTbridge#readme",
   "dependencies": {
-    "mqtt": "4.3.7",
-    "jsonpath-plus": "5.0.1"
+    "mqtt": "5.10.1",
+    "jsonpath-plus": "10.0.1"
   }
 }

@@ -101,7 +101,9 @@ module.exports = NodeHelper.create({
         });
 
         client.on('message', function (topic, message) {  //MQTT library function. Returns message topic/payload when it arrives to subscribed topics.
-          console.log('[MQTT bridge] MQTT message received. Topic: ' + topic + ', message: ' + message);
+	  if (self.config.debug){
+            console.log('[MQTT bridge] MQTT message received. Topic: ' + topic + ', message: ' + message);
+	  }
           self.sendSocketNotification('MQTT_MESSAGE_RECEIVED', { 'topic': topic, 'data': message.toString() }); // send mqtt mesage payload for further converting to NOTI to MMM-MQTTbridge.js file
         });
 
@@ -133,7 +135,9 @@ module.exports = NodeHelper.create({
         if (typeof client !== "undefined") {
           client.publish(payload.topic, payload.payload, payload.options || {});
         };
-        console.log("[MQTT bridge] NOTI->MQTT. Topic: " + payload.topic + ", payload: " + payload.payload);
+	if (self.config.debug){
+          console.log("[MQTT bridge] NOTI->MQTT. Topic: " + payload.topic + ", payload: " + payload.payload);
+	}
         break;
       case 'LOG':
         console.log(payload); //just to display LOG in Terminal, not console.
