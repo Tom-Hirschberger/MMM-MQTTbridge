@@ -19,7 +19,7 @@ Module.register("MMM-MQTTbridge", {
   },
 
   getScripts: function () {
-		return [this.file('node_modules/jsonpath-plus/dist/index-browser-umd.cjs')];
+		return [this.file('node_modules/jsonpath-plus/dist/index-browser-umd.js')];
 	},
 
   start: function () {

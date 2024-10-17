@@ -1,10 +1,10 @@
 {
   "name": "MMM-MQTTbridge",
-  "version": "2.2.1",
+  "version": "2.2.2",
   "description": "NOTIFICATION <-> MQTT module for MagicMirror",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "postinstall": "./postinstall"
   },
   "repository": {
     "type": "git",
