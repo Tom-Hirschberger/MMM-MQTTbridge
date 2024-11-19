@@ -294,6 +294,8 @@ var notiMqttCommands = [
     mqttTopic: "myhome/test",
   },
 ];
+
+module.exports = { notiHook, notiMqttCommands };
 ```
 
 ### MQTT to NOTIFICATIONS DICTIONARY SECTION
