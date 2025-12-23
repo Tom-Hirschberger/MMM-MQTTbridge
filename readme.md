@@ -200,12 +200,12 @@ Should be set within `~/MagicMirror/modules/MMM-MQTTbridge/dict/notiDictionary.j
 :warning:
 The configuration of how to ignore the payload value of notifications or send the payload of notifications as mqtt messages changed slightly with version 2.0 of the module!
 
-If the `payloadValue` is missing for a `notiPayload` element all commands configured in `notiMqttCmd` will be initiated independent of the value of the notification payload (new since version 2.0 of the module)!  
-If the `payloadValue` is set the payload of the notification needs to match with this value for the commands in `notiMqttCmd` to be initiated!  
-A `payloadValue` set to `''` will match for notifications with no payload or with the payload set to a empty string (new with version 2.0 of the module, **DIFFERENT TO VERSIONS 1.X AND LOWER**)!  
+If the `payloadValue` is missing for a `notiPayload` element all commands configured in `notiMqttCmd` will be initiated independent of the value of the notification payload (new since version 2.0 of the module)!
+If the `payloadValue` is set the payload of the notification needs to match with this value for the commands in `notiMqttCmd` to be initiated!
+A `payloadValue` set to `''` will match for notifications with no payload or with the payload set to a empty string (new with version 2.0 of the module, **DIFFERENT TO VERSIONS 1.X AND LOWER**)!
 
 If no `mqttMsgPayload` is specified the payload of the notification will be send as MQTT message (new since version 2.0 of the module, **DIFFERENT TO VERSIONS 1.X and LOWER**)!
-If `mqttMsgPayload` is present the value of `mqttMsgPayload` will be send as MQTT message!  
+If `mqttMsgPayload` is present the value of `mqttMsgPayload` will be send as MQTT message!
 
 You can configure if the payload of a notification should be stringified before it is send with the optional option "stringifyPayload". The default value is the one configured in the general section.
 
@@ -225,7 +225,7 @@ var notiHook = [
     notiId: "CLOCK_SECOND",
     notiPayload: [
       {
-        payloadValue: '10', 
+        payloadValue: '10',
         notiMqttCmd: ["Command 1"]
       },
       {
@@ -250,7 +250,7 @@ var notiHook = [
     notiId: "TOGGLE_SHELLY_PLUG",
     notiPayload: [
       {
-        payloadValue: '', 
+        payloadValue: '',
         notiMqttCmd: ["Command 3"]
       },
     ],
@@ -305,12 +305,12 @@ Should be set within `~/MagicMirror/modules/MMM-MQTTbridge/dict/mqttDictionary.j
 :warning:
 The configuration of how to ignore the payload value of mqtt messages or send the payload of mqtt message as notification payload changed slightly with version 2.0 of the module!
 
-If the `payloadValue` is missing for a `mqttPayload` element all commands configured in `mqttNotiCmd` will be initiated independent of the value of mqtt message (new since version 2.0 of the module)!  
-If the `payloadValue` is set, the payload of the message needs to match with this value for the commands in `mqttNotiCmd` to be initiated!  
-A `payloadValue` set to `''` will match for empty messsage (new with version 2.0 of the module, **DIFFERENT TO VERSIONS 1.X AND LOWER**)!  
+If the `payloadValue` is missing for a `mqttPayload` element all commands configured in `mqttNotiCmd` will be initiated independent of the value of mqtt message (new since version 2.0 of the module)!
+If the `payloadValue` is set, the payload of the message needs to match with this value for the commands in `mqttNotiCmd` to be initiated!
+A `payloadValue` set to `''` will match for empty messsage (new with version 2.0 of the module, **DIFFERENT TO VERSIONS 1.X AND LOWER**)!
 
 If no `notiPayload` is specified the message content will be send as payload of the notification (new since version 2.0 of the module, **DIFFERENT TO VERSIONS 1.X and LOWER**)!
-If `notiPayload` is present the value of `notiPayload` will be send as MQTT message!  
+If `notiPayload` is present the value of `notiPayload` will be send as MQTT message!
 
 As of version 2.0 of the module it is possible to specify `qos` setting for each `mqttHook` element. If present these settings override the default values of the general configuration.
 Additionally `options` can be specified which support all options for subscribing to messages of the MQTT.js library (see [MQTT.js](https://github.com/mqttjs/MQTT.js#readme) for details). If `qos` is specified as single value and in the `options` the single value override the `options`.
@@ -320,6 +320,8 @@ As of Version 2.1 it is possible to let the message value be parsed as JSON and 
 As of version 2.1 it is possible to format the message or [JSONPath-Plus](https://github.com/JSONPath-Plus/JSONPath) result with a `valueFormat` string before it will be compared to the `payloadValue` and will be further processed. Look at [valueFormat.md](valueFormat.md) for further details.
 
 As of version 2.1 it is possible to define complexer `conditions` than only compare the messaage content to the `payloadValue`. Look at [conditions.md](conditions.md) for further details.
+
+As of version 2.3 it is possible to define a `sleep` in the commands of `mqttHook`. This way you can pause between two commands. If `sleep` is specified the command does not need to define a `notiId`.
 
 ```js
 var mqttHook = [
@@ -392,9 +394,18 @@ var mqttNotiCommands = [
       commandId: "Command 3",
       notiID: "PARSED_JSON_NOTIFICATION",
     },
+    {
+      commandId: "Command 4",
+      notiID: "PARSED_JSON_NOTIFICATION",
+      sleep: 10000
+    },
+    {
+      commandId: "Command 5",
+      sleep: 5000
+    },
   ];
   ```
-  
+
 ## CREDITS
 
 [@bugsounet](https://github.com/bugsounet)

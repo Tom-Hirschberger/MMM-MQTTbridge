@@ -1,6 +1,6 @@
 {
   "name": "MMM-MQTTbridge",
-  "version": "2.2.4",
+  "version": "2.3.0",
   "description": "NOTIFICATION <-> MQTT module for MagicMirror",
   "main": "index.js",
   "scripts": {
