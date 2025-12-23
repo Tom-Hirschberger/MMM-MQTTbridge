@@ -245,7 +245,7 @@ Module.register("MMM-MQTTbridge", {
             self.lastMqttValues[payload.topic][curHookIdx] = [JSON.stringify(value), Date.now()]
             let mqttCmds = curHookConfig.mqttNotiCmd || []
             for(let curCmdIdx = 0; curCmdIdx < mqttCmds.length; curCmdIdx++){
-              let curCmdConfigs = self.cmqttNotiCommands[mqttCmds[curCmdIdx]]
+              let curCmdConfigs = self.cmqttNotiCommands[mqttCmds[curCmdIdx]] || []
               for(let curCmdConfIdx = 0; curCmdConfIdx < curCmdConfigs.length; curCmdConfIdx++){
                 let curCmdConf = curCmdConfigs[curCmdConfIdx]
                 // {
