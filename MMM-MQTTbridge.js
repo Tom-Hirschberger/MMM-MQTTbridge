@@ -34,7 +34,7 @@ Module.register("MMM-MQTTbridge", {
       interval: 300000,
       onConnectMessages: []
     },self.config.mqttConfig)
-    
+
     self.config.notiConfig = Object.assign({
       qos: 0,
       listenNoti: false,
@@ -56,6 +56,11 @@ Module.register("MMM-MQTTbridge", {
     self.ctopicsWithJsonpath = {}
     self.lastNotiValues = {}
     self.lastMqttValues = {}
+  },
+
+
+  sleep: function(time) {
+    return new Promise((resolve) => setTimeout(resolve, time));
   },
 
   isAString: function(x) {
@@ -169,7 +174,7 @@ Module.register("MMM-MQTTbridge", {
     }
   },
 
-  mqttToNoti: function (payload) {
+  mqttToNoti: async function (payload) {
     const self = this
     let msg = payload.data
     let curMqttHook = self.cmqttHook[payload.topic]
@@ -220,7 +225,7 @@ Module.register("MMM-MQTTbridge", {
         }
 
         //now that we have the parsed and replaced value we can check if the payloadValue is matched (if payloadValue is present)
-        if ( 
+        if (
           (typeof curHookConfig.payloadValue === "undefined") ||
           (curHookConfig.payloadValue == value)
         ){
@@ -261,11 +266,23 @@ Module.register("MMM-MQTTbridge", {
         }
                   } else {
                     self.sendNotification(curCmdConf.notiID, curCmdConf.notiPayload)
-        if (self.config.debug){
+        			if (self.config.debug){
                       this.sendSocketNotification("LOG","[MQTT bridge] MQTT -> NOTI issued: " + curCmdConf.notiID + ", payload: "+ JSON.stringify(curCmdConf.notiPayload));
-              }
+              		}
                   }
-                } else {
+
+				  if (typeof curCmdConf.sleep !== "undefined"){
+					if (self.config.debug){
+                      this.sendSocketNotification("LOG","[MQTT bridge] MQTT -> Sleeping for "+curCmdConf.sleep+" ms");
+              		}
+					await self.sleep(curCmdConf.sleep)
+				  }
+                } else if (typeof curCmdConf.sleep !== "undefined"){
+					await self.sleep(curCmdConf.sleep)
+					if (self.config.debug){
+                      this.sendSocketNotification("LOG","[MQTT bridge] MQTT -> Sleeping for "+curCmdConf.sleep+" ms");
+              		}
+				} else {
                   this.sendSocketNotification("LOG","[MQTT bridge] MQTT -> NOTI error: Skipping notification cause \"notiID\" is missing. "+JSON.stringify(curCmdConf));
                 }
               }
@@ -283,7 +300,7 @@ Module.register("MMM-MQTTbridge", {
       for(let curHookIdx = 0; curHookIdx < curNotiHooks.length; curHookIdx++){
         let curHookConfig = curNotiHooks[curHookIdx]
         // {
-        //   payloadValue: true, 
+        //   payloadValue: true,
         //   notiMqttCmd: ["SCREENON"]
         // },
 
@@ -298,7 +315,7 @@ Module.register("MMM-MQTTbridge", {
           value = eval(eval("`" + curHookConfig.valueFormat + "`"))
         }
 
-        if ( 
+        if (
           (typeof curHookConfig.payloadValue === "undefined") ||
           (JSON.stringify(curHookConfig.payloadValue) == JSON.stringify(value))
         ){
@@ -359,7 +376,7 @@ Module.register("MMM-MQTTbridge", {
                   }
 
                   let curOptions = curCmdConf.options || {}
-                  
+
                   if (typeof curCmdConf.retain !== "undefined"){
                     curOptions["retain"] = curCmdConf.retain
                   } else {
@@ -413,7 +430,7 @@ Module.register("MMM-MQTTbridge", {
         for (let curMsg of self.config.mqttConfig.onConnectMessages){
           self.publishNotiToMqtt(curMsg.topic, curMsg.msg, curMsg.options || {})
         }
-        
+
         for (let curNoti of self.config.notiConfig.onConnectNotifications){
           if (typeof curNoti.payload !== "undefined"){
             self.sendNotification(curNoti.notification, curNoti.payload)
@@ -433,14 +450,14 @@ Module.register("MMM-MQTTbridge", {
     var sndname = "system"; //sender name default is "system"
 
     if (!sender === false) { sndname = sender.name; }; //if no SENDER specified in NOTIFICATION, the SENDER is left as "system" (according to MM documentation), otherwise - use sender name
-    
+
     // exclude NOTIFICATIONS where SENDER in ignored list
-    for (var x in self.config.notiConfig.ignoreNotiSender) 
+    for (var x in self.config.notiConfig.ignoreNotiSender)
     {
       if (sndname == self.config.notiConfig.ignoreNotiSender[x]) { return; }
     }
     // exclude NOTIFICATIONS where NOTIFICATION ID in ignored list
-    for (var x in self.config.notiConfig.ignoreNotiId) 
+    for (var x in self.config.notiConfig.ignoreNotiId)
     {
       if (notification == self.config.notiConfig.ignoreNotiId[x]) { return; }
     }
